@@ -32,6 +32,7 @@ def hybrid_scores(user_vec, items, now: datetime) -> list[dict]:
             score = W_SIM * sim + W_ENG * eng + W_REC * rec
         else:
             score = 0.5 * eng + 0.5 * rec
+        score = max(0.0, score)
         out.append({"message_id": mid, "vector": vec, "score": score,
                     "parts": {"sim": sim, "eng": eng, "rec": rec}})
     return out

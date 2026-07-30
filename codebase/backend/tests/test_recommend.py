@@ -47,3 +47,11 @@ def test_mmr_diversifies():
                                        item("b", [0, 1, 0], hearts=8)], NOW)
     picked = [s["message_id"] for s in mmr_select(scored, k=2, lam=0.7)]
     assert picked[0] == "a1" and picked[1] == "b"
+
+
+def test_negative_sim_clamped_to_zero_and_never_boosted():
+    scored = hybrid_scores([1, 0], [item("anti", [-1, 0]), item("pos", [1, 0])], NOW)
+    by = {s["message_id"]: s for s in scored}
+    assert by["anti"]["score"] == 0.0                  # clamp
+    picked = [s["message_id"] for s in mmr_select(scored, k=2)]
+    assert picked == ["pos", "anti"]                   # anti không bao giờ vượt pos
