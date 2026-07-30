@@ -17,6 +17,8 @@
 - Enrich-once: bài có `enriched_at` không bao giờ được enrich lại trừ khi `--force`. `enrich_failed >= 3` → thôi retry.
 - Không commit `companion.db`, `.env`, `eval/traces/` output (đã gitignore `*.db` thì thêm; kiểm tra `.gitignore` gốc repo có `.env` rồi).
 - Trace mỗi lần enrich: `eval/traces/ingest/<message_id>.json`.
+- **Package layout theo phần (dễ debug/version):** `ingest/sources/` (base.py · seed.py · discord_source.py) · `ingest/prompts/` (mỗi version 1 file: `enrich_v1.py`, sau này `enrich_v2.py`…) · `ingest/tools/` (images.py — Tavily) · `ingest/agents/` (news_enricher.py). Mỗi package có `__init__.py` re-export public API: `from ingest.sources import SeedSource, DiscordSource`, `from ingest.prompts import ENRICH_V1, PROMPT_VERSION, PROMPTS`, `from ingest.tools import pick_image, tavily_images`, `from ingest.agents import build_agent, enrich_post`.
+- Server Discord hiện là **mô phỏng, CHƯA có bài đăng** — manual verify Discord chỉ cần thấy resolve đủ 3 kênh + `fetched: 0`; data để test enrich thật là seed.
 - Commit trên branch hiện tại (`dev/An` hoặc branch của người thực hiện), message tiếng Anh, kèm `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>`.
 
 ---
@@ -464,7 +466,9 @@ class Store:
 ### Task 4: SeedSource + seed data
 
 **Files:**
-- Create: `codebase/backend/ingest/sources.py` (phần Source + SeedSource; DiscordSource ở Task 8)
+- Create: `codebase/backend/ingest/sources/__init__.py` (re-export)
+- Create: `codebase/backend/ingest/sources/base.py` (Source protocol)
+- Create: `codebase/backend/ingest/sources/seed.py` (SeedSource; DiscordSource ở Task 8)
 - Create: `codebase/backend/ingest/seeds/posts.json`
 - Test: `codebase/backend/tests/test_sources_seed.py`
 
@@ -528,18 +532,27 @@ def test_seed_respects_checkpoint():
 
 - [ ] **Step 3: Chạy → FAIL.**
 
-- [ ] **Step 4: Implement phần SeedSource trong `ingest/sources.py`**
+- [ ] **Step 4: Implement package `ingest/sources/`**
+
+`ingest/sources/base.py`:
 
 ```python
-import json
-from pathlib import Path
 from typing import Protocol
 
-from .models import RawPost
+from ..models import RawPost
 
 
 class Source(Protocol):
     def fetch(self, since: dict[str, int]) -> list[RawPost]: ...
+```
+
+`ingest/sources/seed.py`:
+
+```python
+import json
+from pathlib import Path
+
+from ..models import RawPost
 
 
 class SeedSource:
@@ -551,6 +564,15 @@ class SeedSource:
         posts = [RawPost(**item) for item in data]
         return [p for p in posts
                 if int(p.message_id) > since.get(p.channel, 0)]
+```
+
+`ingest/sources/__init__.py`:
+
+```python
+from .base import Source
+from .seed import SeedSource
+
+__all__ = ["Source", "SeedSource"]
 ```
 
 - [ ] **Step 5: `pytest tests/test_sources_seed.py -v` → PASS.**
@@ -651,22 +673,32 @@ Lưu ý thứ tự `_KIND_KEYWORDS`: "Video Recording" phải ra `record` trư�
 ### Task 6: Prompts + NewsEnricher (Agents SDK + Tavily tool)
 
 **Files:**
-- Create: `codebase/backend/ingest/prompts.py`
-- Create: `codebase/backend/ingest/enrich.py`
+- Create: `codebase/backend/ingest/prompts/__init__.py` + `codebase/backend/ingest/prompts/enrich_v1.py`
+- Create: `codebase/backend/ingest/tools/__init__.py` + `codebase/backend/ingest/tools/images.py`
+- Create: `codebase/backend/ingest/agents/__init__.py` + `codebase/backend/ingest/agents/news_enricher.py`
 - Test: `codebase/backend/tests/test_enrich.py`
 
 **Interfaces:**
 - Consumes: `NewsEnrichment`, `TAG_IDS` (Task 2); `Config` (Task 1).
 - Produces:
-  - `prompts.PROMPT_VERSION = "v1"`, `prompts.ENRICH_V1: str`.
-  - `enrich.pick_image(images: list[str]) -> str | None` — lọc URL hợp lệ.
-  - `enrich.enrich_post(post: dict, cfg: Config, runner=None) -> tuple[NewsEnrichment, str, str]` — trả `(enrichment, image_source, trace_id)`; `runner` injectable (callable nhận `input_text` trả `NewsEnrichment`) để test không gọi API; mặc định dùng `Runner.run_sync` với agent thật. Ghi trace JSON vào `eval/traces/ingest/<message_id>.json` (đường dẫn gốc repo, tạo thư mục nếu chưa có).
+  - `ingest.prompts`: `PROMPT_VERSION = "v1"`, `ENRICH_V1: str`, `PROMPTS: dict[str, str]` (registry version → prompt).
+  - `ingest.tools`: `pick_image(images: list[str]) -> str | None`, `tavily_images(query: str, api_key: str) -> list[str]`.
+  - `ingest.agents`: `build_agent(cfg) -> Agent`, `enrich_post(post: dict, cfg: Config, runner=None) -> tuple[NewsEnrichment, str, str]` — trả `(enrichment, image_source, trace_id)`; `runner` injectable (callable nhận `input_text` trả `NewsEnrichment`) để test không gọi API; mặc định dùng `Runner.run_sync` với agent thật. Ghi trace JSON vào `eval/traces/ingest/<message_id>.json` (tạo thư mục nếu chưa có).
 
-- [ ] **Step 1: Viết `ingest/prompts.py`** (không cần test riêng — hằng số):
+- [ ] **Step 1: Viết `ingest/prompts/`** (không cần test riêng — hằng số).
+
+`ingest/prompts/__init__.py`:
 
 ```python
-PROMPT_VERSION = "v1"
+from .enrich_v1 import ENRICH_V1
 
+PROMPT_VERSION = "v1"
+PROMPTS = {"v1": ENRICH_V1}  # thêm enrich_v2.py thì đăng ký vào đây
+```
+
+`ingest/prompts/enrich_v1.py`:
+
+```python
 ENRICH_V1 = """Bạn là biên tập viên bản tin nội bộ của khoá học AI Thực Chiến.
 Nhiệm vụ: đọc MỘT bài đăng Discord và trả về đúng schema yêu cầu.
 
@@ -712,7 +744,8 @@ VÍ DỤ 2 — bài: "Nhóm mình cần khảo sát khó khăn khi làm Lab demo
 ```python
 import json
 from ingest.config import Config
-from ingest.enrich import enrich_post, pick_image
+from ingest.agents import enrich_post
+from ingest.tools import pick_image
 from ingest.models import NewsEnrichment
 
 
@@ -746,21 +779,13 @@ def test_enrich_post_placeholder_when_no_image(tmp_path, monkeypatch):
 
 - [ ] **Step 3: Chạy → FAIL.**
 
-- [ ] **Step 4: Implement `ingest/enrich.py`**
+- [ ] **Step 4: Implement `ingest/tools/` + `ingest/agents/`**
+
+`ingest/tools/images.py`:
 
 ```python
-import json
-import uuid
-from pathlib import Path
-
 import httpx
-from agents import Agent, Runner, function_tool
 
-from .config import Config
-from .models import NewsEnrichment
-from .prompts import ENRICH_V1, PROMPT_VERSION
-
-TRACE_DIR = Path("eval/traces/ingest")
 _BAD_SUFFIXES = (".svg", ".ico", ".gif")
 
 
@@ -773,7 +798,7 @@ def pick_image(images: list[str]) -> str | None:
     return None
 
 
-def _tavily_images(query: str, api_key: str) -> list[str]:
+def tavily_images(query: str, api_key: str) -> list[str]:
     if not api_key:
         return []
     try:
@@ -785,13 +810,38 @@ def _tavily_images(query: str, api_key: str) -> list[str]:
         return resp.json().get("images", [])
     except httpx.HTTPError:
         return []
+```
+
+`ingest/tools/__init__.py`:
+
+```python
+from .images import pick_image, tavily_images
+
+__all__ = ["pick_image", "tavily_images"]
+```
+
+`ingest/agents/news_enricher.py`:
+
+```python
+import json
+import uuid
+from pathlib import Path
+
+from agents import Agent, Runner, function_tool
+
+from ..config import Config
+from ..models import NewsEnrichment
+from ..prompts import ENRICH_V1, PROMPT_VERSION
+from ..tools import pick_image, tavily_images
+
+TRACE_DIR = Path("eval/traces/ingest")
 
 
 def build_agent(cfg: Config) -> Agent:
     @function_tool
     def search_image(query: str) -> str:
         """Tìm 1 ảnh minh hoạ theo query tiếng Anh. Trả URL, hoặc chuỗi rỗng."""
-        return pick_image(_tavily_images(query, cfg.tavily_api_key)) or ""
+        return pick_image(tavily_images(query, cfg.tavily_api_key)) or ""
 
     return Agent(
         name="news_enricher",
@@ -835,6 +885,14 @@ def enrich_post(post: dict, cfg: Config, runner=None) -> tuple[NewsEnrichment, s
         "usage": usage,
     }, ensure_ascii=False, indent=2), encoding="utf-8")
     return enrichment, image_source, trace_id
+```
+
+`ingest/agents/__init__.py`:
+
+```python
+from .news_enricher import build_agent, enrich_post
+
+__all__ = ["build_agent", "enrich_post"]
 ```
 
 - [ ] **Step 5: `pytest tests/test_enrich.py -v` → PASS.**
@@ -910,8 +968,8 @@ Lưu ý: test chạy từ `codebase/backend` nên trace ghi vào `eval/traces/in
 import argparse
 import time
 
+from .agents import enrich_post
 from .config import Config
-from .enrich import enrich_post
 from .linker import detect_kind, detect_session
 from .sources import SeedSource
 from .store import Store
@@ -991,8 +1049,9 @@ if __name__ == "__main__":
 ### Task 8: DiscordSource
 
 **Files:**
-- Modify: `codebase/backend/ingest/sources.py` (thêm mapping + DiscordSource)
-- Test: `codebase/backend/tests/test_sources_discord.py` (chỉ test mapping — không gọi Discord thật)
+- Create: `codebase/backend/ingest/sources/discord_source.py`
+- Modify: `codebase/backend/ingest/sources/__init__.py` (re-export thêm `DiscordSource, map_role, normalize_channel_name, resolve_forum_channels, thread_to_rawpost`)
+- Test: `codebase/backend/tests/test_sources_discord.py` (chỉ test mapping/resolver — không gọi Discord thật)
 
 **Interfaces:**
 - Produces: `map_role(role_names: list[str]) -> str` ("Lab Coach"|"BTC"|"Mentor"|"Học viên"); `normalize_channel_name(name: str) -> str` (bỏ emoji + dấu tiếng Việt, lowercase); `resolve_forum_channels(channels: list[tuple[int, str]]) -> dict[str, str]` (map `chia-se`/`bai-hoc`/`tai-nguyen` → channel id từ tên); `thread_to_rawpost(thread_id, channel_key, title, starter_content, author_name, role_names, jump_url, created_at_iso, hearts, comment_tuples) -> RawPost` với `comment_tuples: list[tuple[id, author, role_names, content, created_at_iso]]`; `DiscordSource(token, channel_ids, guild_id="").fetch(since)` — nếu `channel_ids` rỗng và có `guild_id` thì tự resolve kênh theo tên khi fetch.
@@ -1039,10 +1098,12 @@ def test_thread_to_rawpost_maps_fields():
 
 - [ ] **Step 2: Chạy → FAIL.**
 
-- [ ] **Step 3: Implement — thêm vào `ingest/sources.py`**
+- [ ] **Step 3: Implement `ingest/sources/discord_source.py`** (nhớ cập nhật re-export trong `sources/__init__.py`)
 
 ```python
 import unicodedata
+
+from ..models import RawComment, RawPost
 
 _WANTED_CHANNELS = ("chia-se", "bai-hoc", "tai-nguyen")
 
@@ -1077,7 +1138,6 @@ def map_role(role_names: list[str]) -> str:
 def thread_to_rawpost(thread_id, channel_key, title, starter_content, author_name,
                       role_names, jump_url, created_at_iso, hearts,
                       comment_tuples) -> RawPost:
-    from .models import RawComment
     return RawPost(
         message_id=str(thread_id), channel=channel_key, title=title,
         content=starter_content, author=author_name,
@@ -1278,8 +1338,8 @@ import json
 import sys
 from pathlib import Path
 
+from .agents import enrich_post
 from .config import Config
-from .enrich import enrich_post
 
 
 def main():
