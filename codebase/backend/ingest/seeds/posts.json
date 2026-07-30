@@ -1,0 +1,144 @@
+[
+  {
+    "message_id": "1001",
+    "channel": "bai-hoc",
+    "title": "[Deep-dive] BEV — góc nhìn từ trên xuống của xe tự hành",
+    "content": "BEV đưa dữ liệu camera/LiDAR về một mặt phẳng nhìn từ trên xuống để hợp nhất cảm biến. Bài giải thích pipeline BEVFormer và demo trên nuScenes.",
+    "author": "GR16 — T112",
+    "author_role": "Học viên",
+    "jump_url": "https://discord.com/channels/1/2/1001",
+    "created_at": "2026-07-30T09:00:00",
+    "hearts": 23,
+    "comments": [
+      {"id": "1001-c1", "author": "T057 — A.Minh", "author_role": "Học viên",
+       "content": "Phần chiếu multi-camera dễ hiểu quá!", "created_at": "2026-07-30T10:00:00"}
+    ]
+  },
+  {
+    "message_id": "1002",
+    "channel": "chia-se",
+    "title": "Prompt caching giảm 80% chi phí gọi API",
+    "content": "Cố định phần context tĩnh lên đầu request để cache hit khi chạy eval lặp lại. Kèm số liệu trước/sau và các lỗi gây cache miss.",
+    "author": "T093 — D.Phúc",
+    "author_role": "Học viên",
+    "jump_url": "https://discord.com/channels/1/2/1002",
+    "created_at": "2026-07-30T11:00:00",
+    "hearts": 27,
+    "comments": []
+  },
+  {
+    "message_id": "1003",
+    "channel": "bai-hoc",
+    "title": "[Bài học] Đánh giá chất lượng tool-calling của agent như thế nào?",
+    "content": "Chia sẻ khung đánh giá 3 tiêu chí: chọn đúng tool, truyền đúng tham số, xử lý ổn khi tool trả về rỗng. Kèm bộ test case mẫu để tự chấm agent của bạn.",
+    "author": "T045 — H.Long",
+    "author_role": "Học viên",
+    "jump_url": "https://discord.com/channels/1/2/1003",
+    "created_at": "2026-07-30T13:30:00",
+    "hearts": 15,
+    "comments": [
+      {"id": "1003-c1", "author": "T012 — N.Bảo", "author_role": "Học viên",
+       "content": "Cho mình xin bộ test case với ạ!", "created_at": "2026-07-30T14:00:00"}
+    ]
+  },
+  {
+    "message_id": "1004",
+    "channel": "bai-hoc",
+    "title": "[Bài học] MCP là gì và vì sao mọi agent framework đều nhắc tới nó",
+    "content": "Model Context Protocol chuẩn hoá cách agent kết nối tới tool/data bên ngoài qua một server riêng biệt, thay vì hard-code từng API. Bài viết so sánh MCP với function calling truyền thống.",
+    "author": "T028 — L.Anh",
+    "author_role": "Học viên",
+    "jump_url": "https://discord.com/channels/1/2/1004",
+    "created_at": "2026-07-30T15:00:00",
+    "hearts": 19,
+    "comments": []
+  },
+  {
+    "message_id": "1005",
+    "channel": "bai-hoc",
+    "title": "[Bài học] Folder structure cũng là một quyết định kiến trúc",
+    "content": "Đặt tên và phân tầng thư mục (routes/services/repositories) giúp thành viên mới đọc code hình dung được luồng dữ liệu ngay từ cây thư mục, không cần đọc hết code. Bài có ví dụ trước/sau khi refactor.",
+    "author": "T077 — Q.Trang",
+    "author_role": "Học viên",
+    "jump_url": "https://discord.com/channels/1/2/1005",
+    "created_at": "2026-07-30T16:15:00",
+    "hearts": 31,
+    "comments": [
+      {"id": "1005-c1", "author": "T093 — D.Phúc", "author_role": "Học viên",
+       "content": "Bài này nên đọc trước khi bắt đầu project mới!", "created_at": "2026-07-30T16:45:00"},
+      {"id": "1005-c2", "author": "T057 — A.Minh", "author_role": "Học viên",
+       "content": "Team mình áp dụng luôn, cảm ơn bạn.", "created_at": "2026-07-30T17:10:00"}
+    ]
+  },
+  {
+    "message_id": "1006",
+    "channel": "chia-se",
+    "title": "[Chia sẻ] Thiết kế UI demo nhanh với shadcn/ui",
+    "content": "Dùng shadcn/ui kết hợp Tailwind để dựng UI demo trong vài giờ mà vẫn nhìn chuyên nghiệp — tips chọn component, phối theme màu và dark mode.",
+    "author": "T064 — K.Vy",
+    "author_role": "Học viên",
+    "jump_url": "https://discord.com/channels/1/2/1006",
+    "created_at": "2026-07-30T19:00:00",
+    "hearts": 22,
+    "comments": []
+  },
+  {
+    "message_id": "1007",
+    "channel": "chia-se",
+    "title": "[Khảo sát] Bạn hài lòng với tốc độ feedback của mentor tới đâu?",
+    "content": "Team đang tổng hợp ý kiến để cải thiện quy trình mentor review. Mọi người dành 2 phút điền form khảo sát ở link đính kèm giúp mình nhé.",
+    "author": "T101 — Ban tổ chức",
+    "author_role": "Mentor",
+    "jump_url": "https://discord.com/channels/1/2/1007",
+    "created_at": "2026-07-31T08:00:00",
+    "hearts": 8,
+    "comments": [
+      {"id": "1007-c1", "author": "T045 — H.Long", "author_role": "Học viên",
+       "content": "Đã điền form!", "created_at": "2026-07-31T08:20:00"}
+    ]
+  },
+  {
+    "message_id": "1008",
+    "channel": "bai-hoc",
+    "title": "[Khảo sát] Chủ đề nào bạn muốn học tiếp trong 2 tuần tới?",
+    "content": "Danh sách 5 chủ đề đề xuất: RAG nâng cao, fine-tuning nhỏ gọn, multi-agent orchestration, đánh giá model, triển khai production. Vote qua form để BTC sắp lịch bài học phù hợp.",
+    "author": "T101 — Ban tổ chức",
+    "author_role": "Mentor",
+    "jump_url": "https://discord.com/channels/1/2/1008",
+    "created_at": "2026-07-31T09:30:00",
+    "hearts": 5,
+    "comments": []
+  },
+  {
+    "message_id": "1009",
+    "channel": "chia-se",
+    "title": "[Recap] Tổng hợp meme và khoảnh khắc hài hước tuần qua",
+    "content": "Từ bug \"agent tự gọi chính nó vô hạn\" đến chuyện quên đóng terminal 20 tab — điểm lại loạt meme khiến cả kênh cười nghiêng ngả tuần này.",
+    "author": "T057 — A.Minh",
+    "author_role": "Học viên",
+    "jump_url": "https://discord.com/channels/1/2/1009",
+    "created_at": "2026-07-31T11:00:00",
+    "hearts": 30,
+    "comments": [
+      {"id": "1009-c1", "author": "T028 — L.Anh", "author_role": "Học viên",
+       "content": "Cái meme thứ 3 quá đúng với mình.", "created_at": "2026-07-31T11:20:00"}
+    ]
+  },
+  {
+    "message_id": "1010",
+    "channel": "bai-hoc",
+    "title": "[Bài học] Làm chủ AI hay đang bị AI làm chủ mình?",
+    "content": "Ranh giới giữa dùng AI để tăng tốc tư duy và lệ thuộc AI đến mức mất khả năng tự giải quyết vấn đề. Vài nguyên tắc nhỏ để luôn hiểu rõ code/quyết định do AI đề xuất trước khi chấp nhận.",
+    "author": "T012 — N.Bảo",
+    "author_role": "Học viên",
+    "jump_url": "https://discord.com/channels/1/2/1010",
+    "created_at": "2026-07-31T13:00:00",
+    "hearts": 12,
+    "comments": [
+      {"id": "1010-c1", "author": "T064 — K.Vy", "author_role": "Học viên",
+       "content": "Đúng thứ mình cần đọc lúc này.", "created_at": "2026-07-31T13:30:00"},
+      {"id": "1010-c2", "author": "T077 — Q.Trang", "author_role": "Học viên",
+       "content": "Cảm ơn vì đã nhắc nhở nhẹ nhàng.", "created_at": "2026-07-31T14:00:00"}
+    ]
+  }
+]
