@@ -1,23 +1,116 @@
 @import "tailwindcss";
+/* Be Vietnam Pro: geometric sans giống Poppins nhưng CÓ ĐỦ dấu tiếng Việt.
+   (Poppins thiếu subset vietnamese — chữ có dấu sẽ rơi về font hệ thống.)
+   Self-host qua @fontsource → demo không cần mạng. */
+@import "@fontsource/be-vietnam-pro/400.css";
+@import "@fontsource/be-vietnam-pro/500.css";
+@import "@fontsource/be-vietnam-pro/600.css";
+@import "@fontsource/be-vietnam-pro/700.css";
+
+/* ============================================================
+   DESIGN TOKENS — đổi toàn app chỉ bằng khối này.
+   Tailwind 4 tự sinh class từ token: --color-ink → text-ink,
+   --text-sm → text-sm, --shadow-card → shadow-card…
+   ============================================================ */
+@theme {
+  --font-sans: "Be Vietnam Pro", ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  /* ---- THANG CHỮ: 7 bậc, KHÔNG dùng cỡ tuỳ ý ngoài danh sách này ----
+     Trước đây UI có ~17 cỡ lẻ (9.5px, 11.5px, 12.5px, 13.5px…) khiến
+     mọi thứ trông "gần giống nhau" → mắt không phân được tầng thông tin. */
+  --text-2xs: 11px;
+  --text-2xs--line-height: 15px;
+  --text-2xs--letter-spacing: 0.02em;
+  --text-xs: 12px;
+  --text-xs--line-height: 17px;
+  --text-sm: 14px;
+  --text-sm--line-height: 20px;
+  --text-base: 15px;
+  --text-base--line-height: 23px;
+  --text-md: 16px;
+  --text-md--line-height: 24px;
+  --text-lg: 18px;
+  --text-lg--line-height: 27px;
+  --text-xl: 22px;
+  --text-xl--line-height: 30px;
+  --text-2xl: 27px;
+  --text-2xl--line-height: 35px;
+
+  /* nền & bề mặt */
+  --color-canvas: #f6f8fd;
+  --color-surface: #ffffff;
+  --color-surface-2: #f3f6fc;
+  --color-surface-3: #e9eef8;
+  --color-line: #e6ebf5;
+  --color-line-2: #cfd9ec;
+
+  /* chữ — 3 tầng, đủ để phân cấp mà không mờ nhoè */
+  --color-ink: #0f172a;
+  --color-ink-2: #4b5670;
+  --color-ink-3: #8b98b0;
+
+  /* thương hiệu — gradient CHỈ dùng cho logo mark, còn lại solid.
+     Dùng gradient ở 6 chỗ (như bản cũ) làm mất trọng số thị giác. */
+  --color-brand: #2f5fe0;
+  --color-brand-hover: #2650c4;
+  --color-brand-2: #7c3aed;
+  --color-brand-soft: #eaf0ff;
+  --color-brand-line: #c5d6fb;
+
+  /* trạng thái */
+  --color-ok: #128a4d;
+  --color-ok-soft: #e8f7ef;
+  --color-warn: #b45309;
+  --color-warn-soft: #fdf3e3;
+  --color-danger: #c2334a;
+  --color-danger-soft: #fdeef0;
+
+  /* đổ bóng — chỉ 2 bậc, tránh "mọi thứ đều nổi" */
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.05), 0 1px 3px rgb(15 23 42 / 0.04);
+  --shadow-float: 0 16px 44px -12px rgb(15 23 42 / 0.24), 0 2px 8px rgb(15 23 42 / 0.06);
+}
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {
-  font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
-  background: #0e1015;
-  color: #e5e7eb;
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  color: var(--color-ink);
+  background: var(--color-canvas);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/* thanh cuộn gọn cho vùng lịch / feed */
+h1,
+h2,
+h3 {
+  letter-spacing: -0.015em;
+}
+
+/* ---- Focus ring dùng chung: bản cũ không có focus visible ở BẤT KỲ đâu,
+   nghĩa là không thao tác được bằng bàn phím. ---- */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
 *::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 *::-webkit-scrollbar-thumb {
-  background: #2c3140;
-  border-radius: 8px;
+  background: #d3dcee;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #b3c1dc;
+  background-clip: padding-box;
+  border: 3px solid transparent;
 }
 *::-webkit-scrollbar-track {
   background: transparent;
@@ -29,4 +122,13 @@ details > summary {
 }
 details > summary::-webkit-details-marker {
   display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
