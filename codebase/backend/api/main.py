@@ -5,9 +5,12 @@ from pydantic import BaseModel
 from ingest.config import Config
 from ingest.store import Store
 
+import app as qa  # Q&A core POST /api/ask (Nghĩa) — mount vào cùng một server
+
 app = FastAPI(title="Companion API")
 app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173"],
                    allow_methods=["*"], allow_headers=["*"])
+app.add_api_route("/api/ask", qa.ask, methods=["POST"], response_model=qa.AskResponse)
 
 
 def get_store() -> Store:
