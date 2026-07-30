@@ -12,7 +12,7 @@
 | Tín hiệu sở thích | **Bio + danh sách news đã bookmark** → agent suy luận → embed đoạn sở thích → retrieve |
 | Nguồn bio | User nhập/sửa trên UI (bảng `users`); default best-effort từ Discord (nickname/roles — **bot API không đọc được About Me**, ghi nhận giới hạn); seed 3 user demo bio khác nhau |
 | Công thức điểm | `score = 0.5·cos(user, news) + 0.25·eng + 0.25·rec` với `eng = log1p(hearts+comments)/log1p(max)`, `rec = exp(−tuổi_giờ/72)` |
-| Đa dạng chủ đề | **MMR biến thể nhân** λ=0.7 khi chọn k bài: `argmax score·(1 − λ·max cos(v, đã_chọn))` — chọn biến thể nhân thay vì trừ chuẩn vì penalty trừ (tối đa 1−λ=0.3) không đủ nén bài gần trùng khi chênh lệch score lớn; biến thể nhân đảm bảo near-duplicate bị loại khỏi top-k (λ cao = ép đa dạng mạnh) |
+| Đa dạng chủ đề | **MMR biến thể nhân** λ=0.35 (mức trung bình yếu — quyết định của nhóm sau khi xem kết quả thật) khi chọn k bài: `argmax score·(1 − λ·max cos(v, đã_chọn))` — biến thể nhân vì penalty trừ chuẩn không đủ nén bài gần trùng khi chênh lệch score lớn; λ thấp = ưu tiên relevance, chỉ nhắc nhẹ đa dạng (λ cao = ép mạnh) |
 | Fallback | User không bio & không bookmark → trọng số sim=0 (hot trend thuần engagement+recency, vẫn qua MMR) |
 | Loại trừ | Bài user đã bookmark KHÔNG xuất hiện trong gợi ý |
 | Cache | Profile inference theo `bio_hash = sha256(bio + sorted(bookmark_ids))`; **lazy re-infer** khi gọi recommendations mà hash stale. Embed news một lần (`embedded_at`), `--force` re-embed |
