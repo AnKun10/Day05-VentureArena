@@ -1,4 +1,4 @@
-"""Companion's five Discord slash commands."""
+"""Companion's four Discord slash commands (luồng TA đã bỏ theo MASTERPLAN)."""
 
 import asyncio
 import json
@@ -10,9 +10,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
-import yaml
 
-from .digest import unanswered_for_classes
 from .ingestion import latest_posts
 
 
@@ -35,14 +33,6 @@ def _request_json(url: str, payload: dict | None = None) -> dict:
 
 def _text(value: str) -> str:
     return value[:1_900] + ("…" if len(value) > 1_900 else "")
-
-
-def _roster(path: Path, user_id: int) -> list[str]:
-    try:
-        data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-    except OSError:
-        return []
-    return next((entry.get("classes", []) for entry in data.get("tas", []) if str(entry.get("user_id")) == str(user_id)), [])
 
 
 class CompanionBot(commands.Bot):
@@ -88,20 +78,5 @@ def create_bot() -> commands.Bot:
     @bot.tree.command(name="hub", description="Mở Companion Web UI")
     async def hub(interaction: discord.Interaction):
         await interaction.response.send_message(os.environ["COMPANION_UI_URL"], ephemeral=True)
-
-    @bot.tree.command(name="ta-digest", description="Nhận DM các câu hỏi tồn cho lớp bạn phụ trách")
-    async def ta_digest(interaction: discord.Interaction):
-        classes = _roster(_path("TA_ROSTER_PATH", PROJECT_ROOT / "codebase" / "data" / "ta_roster.yaml"), interaction.user.id)
-        questions = unanswered_for_classes(database, classes)
-        if not classes:
-            await interaction.response.send_message("Tài khoản này chưa có lớp được gán trong ta_roster.yaml.", ephemeral=True)
-            return
-        text = "Không có câu hỏi tồn." if not questions else "Câu hỏi tồn:\n" + "\n".join(f"• {question}" for question in questions)
-        try:
-            await interaction.user.send(_text(text))
-        except discord.Forbidden:
-            await interaction.response.send_message("Không thể gửi DM; hãy bật nhận DM từ server này.", ephemeral=True)
-            return
-        await interaction.response.send_message("Đã gửi bản tổng hợp qua DM.", ephemeral=True)
 
     return bot

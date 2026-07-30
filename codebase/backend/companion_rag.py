@@ -54,7 +54,7 @@ def answer(question: str, sources: list[Source]) -> Answer:
     if score <= 0.5:
         return Answer(
             "refuse",
-            "Mình chưa có nguồn chính thức để trả lời việc này. Câu hỏi sẽ được chuyển tới TA phụ trách.",
+            "Mình chưa có nguồn chính thức để trả lời việc này — bạn hỏi trực tiếp tại kênh #hỏi-đáp nhé.",
             [],
             round(score, 2),
         )

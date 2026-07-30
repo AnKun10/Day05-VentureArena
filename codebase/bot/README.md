@@ -1,6 +1,6 @@
 # Companion Discord Bot
 
-Bot điều khiển của Companion: 5 slash commands (`/ask` `/digest` `/schedule` `/hub` `/ta-digest` — xem `companion_discord/bot.py`) và bộ công cụ rebuild/replication dựng lại kênh trên server đích qua Discord Bot API (destination-only: chỉ tạo/xoá/replay tài nguyên managed trong `DESTINATION_GUILD_ID` sau khi duyệt dry-run).
+Bot điều khiển của Companion: 4 slash commands (`/ask` `/digest` `/schedule` `/hub` — xem `companion_discord/bot.py`; luồng TA/ta-digest đã bỏ theo MASTERPLAN) và bộ công cụ rebuild/replication dựng lại kênh trên server đích qua Discord Bot API (destination-only: chỉ tạo/xoá/replay tài nguyên managed trong `DESTINATION_GUILD_ID` sau khi duyệt dry-run).
 
 > Phần thu thập dữ liệu bằng web-collector đã được gỡ khỏi repo. Rebuild/replication
 > đọc manifest có sẵn tại `data/discord_crawl/manifest.json` (artifact đầu vào).

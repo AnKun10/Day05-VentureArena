@@ -18,3 +18,4 @@ data/discord_crawl/
 edge-profile*/
 *.cookie
 *.egg-info/
+data/discord_crawl_dataset_snapshot_*/
