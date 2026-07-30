@@ -4,6 +4,7 @@ trong 02-guide.md §3.4: không commit API key/.env)."""
 from __future__ import annotations
 
 import os
+import unicodedata
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -25,36 +26,63 @@ WEB_UI_URL = os.getenv("WEB_UI_URL", "http://localhost:5173")
 BACKEND_API_URL = os.getenv("BACKEND_API_URL", "http://localhost:8000")
 
 # ---------- Mapping tên kênh Discord thật -> channel_group (MASTERPLAN.md §3) ----------
-# Sửa theo đúng tên kênh của server thật/server test khi dựng xong (xem MASTERPLAN.md §9 rủi ro #1).
-CHANNEL_GROUPS: dict[str, list[str]] = {
-    "chat_lop": ["ly-thuyet", "ly-thuyet-chung"],  # + mọi kênh "Lab-*" khớp qua prefix, xem is_lab_channel()
+# Tên kênh thật trên server BTC giữ dấu tiếng Việt và có thể có icon/emoji trước tên
+# (vd "🔔-thông-báo", "thông-báo-chung", "🙋-hỏi-đáp") — _normalize() bỏ dấu + bỏ icon trước khi so khớp.
+#
+# CỐ Ý dùng khớp CHÍNH XÁC (không phải substring): "thông-báo" là cụm rất phổ biến — kênh riêng của
+# từng nhóm cũng thường đặt tên kiểu "thông-báo-nhóm" (vd server thật có kênh "G-17 > thông-báo-nhóm").
+# Substring sẽ vô tình ingest cả kênh nội bộ nhóm khác vào KB chung — chỉ liệt kê đúng tên kênh chính thức
+# quan sát được; thấy kênh chính thức nào chưa có trong danh sách thì thêm exact name vào đây.
+CHANNEL_EXACT_NAMES: dict[str, list[str]] = {
+    "chat_lop": ["ly-thuyet", "thuc-hanh-lab"],  # + mọi kênh "Lab-*"/"Lec-*" khớp qua prefix, xem _class_room_prefix()
     "forum": ["hoi-dap", "bai-hoc", "chia-se"],
     "tai_nguyen": ["tai-nguyen"],
-    "thong_bao": ["thong-bao"],
+    "thong_bao": ["thong-bao", "thong-bao-chung"],
 }
 
+_ROOM_PREFIXES = ("lab-", "lec-")  # phòng lớp cụ thể, nằm trong category "lý thuyết"/"thực hành lab"
 
-def is_lab_channel(channel_name: str) -> bool:
-    return channel_name.lower().startswith("lab-")
+
+def _normalize(name: str) -> str:
+    """Bỏ dấu tiếng Việt + icon/emoji + ký tự thừa, chỉ giữ chữ-số-gạch ngang, viết thường.
+
+    'đ'/'Đ' không tự bỏ dấu được qua NFD (không phải ký tự có dấu kết hợp) nên xử lý tay trước.
+    """
+    name = name.replace("đ", "d").replace("Đ", "D")
+    decomposed = unicodedata.normalize("NFD", name)
+    no_accents = "".join(c for c in decomposed if unicodedata.category(c) != "Mn")
+    ascii_only = "".join(c for c in no_accents if c.isascii() and (c.isalnum() or c == "-"))
+    return ascii_only.lower().strip("-")
+
+
+def _class_room_prefix(name_norm: str) -> str | None:
+    for prefix in _ROOM_PREFIXES:
+        if name_norm.startswith(prefix):
+            return prefix
+    return None
 
 
 def classify_channel(channel_name: str) -> str | None:
     """Trả về channel_group cho một tên kênh, hoặc None nếu kênh không thuộc phạm vi ingest.
 
-    Kênh `lab-*` (vd `lab-d305`) được coi là kênh chat lớp dù không nằm trong danh sách tĩnh —
-    vì mỗi khoá có số lớp Lab khác nhau, không liệt kê hết được.
+    Phòng lớp cụ thể (`Lab-D305`, `Lec-D302`...) được coi là kênh chat lớp dù không nằm trong
+    danh sách tĩnh — mỗi khoá/mỗi lớp có tên phòng khác nhau, không liệt kê hết được.
     """
-    name = channel_name.lower()
-    if is_lab_channel(name):
+    name_norm = _normalize(channel_name)
+    if _class_room_prefix(name_norm):
         return "chat_lop"
-    for group, names in CHANNEL_GROUPS.items():
-        if name in names:
+    for group, names in CHANNEL_EXACT_NAMES.items():
+        if name_norm in names:
             return group
     return None
 
 
 def class_code_for_channel(channel_name: str) -> str | None:
-    """Suy ra mã lớp (vd 'Lab-D305') từ tên kênh chat lớp; None cho kênh không phải lớp cụ thể (vd ly-thuyet-chung)."""
-    if is_lab_channel(channel_name):
-        return "Lab-" + channel_name.split("-", 1)[1].upper()
-    return None
+    """Suy ra mã lớp (vd 'Lab-D305') từ tên phòng lớp cụ thể; None cho kênh chung (vd ly-thuyet-chung)."""
+    name_norm = _normalize(channel_name)
+    prefix = _class_room_prefix(name_norm)
+    if not prefix:
+        return None
+    label = "Lab" if prefix == "lab-" else "Lec"
+    room = name_norm[len(prefix):].upper()
+    return f"{label}-{room}"
