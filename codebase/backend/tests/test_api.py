@@ -35,3 +35,11 @@ def test_news_detail_with_comments_and_404(tmp_path):
 def test_resources(tmp_path):
     client = make_client(tmp_path)
     assert client.get("/api/resources").json()[0]["session_code"] == "WS-2"
+
+
+def test_news_detail_404_when_not_enriched(tmp_path):
+    client = make_client(tmp_path)
+    # make_client's store already has post "1" enriched; add a raw, un-enriched post
+    store = app.dependency_overrides[get_store]()
+    store.upsert_post(make_post(mid="7"))
+    assert client.get("/api/news/7").status_code == 404
