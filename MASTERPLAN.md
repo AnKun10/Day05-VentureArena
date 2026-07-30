@@ -11,17 +11,15 @@ Một trợ lý đồng hành cá nhân hoá cho học viên khoá AI Thực Chi
 
 1. **Bản tin tổng hợp (News Digest)** — gom bài viết từ 2 nhóm kênh Discord của khoá: **kênh chat từng lớp** (`lý-thuyết`, `thực-hành-lab/Lab-XXX`…) và **kênh forum chia sẻ** (`hỏi-đáp`, `chia-sẻ`, `bài-học`) — agent phân loại theo **bộ loại tin do nhóm tự thiết kế** (taxonomy chốt sau, xem mục Nguồn digest).
 2. **Trung tâm buổi học (Session Hub)** — lịch học, tài liệu tương ứng từng buổi, và FAQ theo loại buổi (Lý thuyết · Lab · Workshop · Office hour). Khung lịch là YAML do nhóm curate; **tài liệu (slide, record Zoom) tự động gắn vào block từng buổi** từ kênh `tài-nguyên`, còn thông tin buổi (giờ, hình thức, diễn giả, link Zoom) và hoạt động tuần (mentor duty, office hour) cập nhật từ kênh `thông-báo`.
-3. **Q&A có trích nguồn** — hỏi đáp về logistics và nội dung khoá, trả lời **chỉ từ nguồn chính thức kèm citation**; biết-mình-không-biết thì ghi nhận câu hỏi vào hàng đợi, **tổng hợp gửi cho TA phụ trách đúng lớp Lab/LT** (mỗi TA có tài khoản riêng).
+3. **Q&A có trích nguồn** — hỏi đáp về logistics và nội dung khoá, trả lời **chỉ từ nguồn chính thức kèm citation**; biết-mình-không-biết thì **từ chối rõ ràng** và chỉ hướng người dùng hỏi tại kênh `#hỏi-đáp`.
 
 Tất cả hiển thị trên **một Web UI thống nhất**; Discord bot gửi link UI khi user gõ lệnh, đồng thời trả lời Q&A ngay trong Discord.
 
 ## 2. Lát cắt hackathon (MỘT CÂU — bắt buộc theo đề bài)
 
-> **Một học viên** khoá AI Thực Chiến · **hỏi về lịch học / tài liệu / logistics buổi học** · **AI quyết định: trả lời kèm trích nguồn chính thức, hỏi lại khi mơ hồ, hay từ chối + ghi nhận cho TA** · **nhận câu trả lời đúng có citation, hoặc được báo rõ câu hỏi đã chuyển đến TA phụ trách — không bao giờ nhận thông tin bịa.**
+> **Một học viên** khoá AI Thực Chiến · **hỏi về lịch học / tài liệu / logistics buổi học** · **AI quyết định: trả lời kèm trích nguồn chính thức, hỏi lại khi mơ hồ, hay từ chối rõ ràng** · **nhận câu trả lời đúng có citation, hoặc lời từ chối kèm chỉ hướng hỏi tại `#hỏi-đáp` — không bao giờ nhận thông tin bịa.**
 
-**Quyết định AI trung tâm** (chấm điểm, có golden set): bộ ba **answer-with-citation / clarify / refuse-and-escalate** trong Q&A. Đây là lời gọi AI thật, không hardcode.
-
-**Cơ chế escalation:** câu hỏi bot không trả lời được → lưu vào hàng đợi kèm lớp/buổi liên quan → **bản tổng hợp câu hỏi chưa trả lời** gửi qua Discord cho **tài khoản TA phụ trách đúng lớp Lab/LT đó** (map trong `ta_roster.yaml`), theo định kỳ hoặc lệnh `/ta-digest`. Đây chính là hướng "bản tin cuối ngày cho TA (câu hỏi tồn)" mà đề bài gợi ý — điểm cộng khi trình bày.
+**Quyết định AI trung tâm** (chấm điểm, có golden set): bộ ba **answer-with-citation / clarify / refuse** trong Q&A. Đây là lời gọi AI thật, không hardcode.
 
 **Các phần KHÔNG phải quyết định trung tâm** (được phép mock/rule-based, khai rõ trong spec):
 - Phân loại tin cho digest: agent phân loại theo taxonomy loại tin nhóm tự thiết kế (chốt sau) — là lời gọi AI phụ, không phải quyết định trung tâm nên không cần golden set riêng, nhưng khai rõ trong spec.
@@ -53,8 +51,6 @@ flowchart LR
     BOT <--> API
     UI[Web UI — React/Vite\nTab: News · Schedule · Chat] <--> API
     BOT -->|gửi link| UI
-    DB -->|câu chưa trả lời\ngom theo lớp| TDG[TA Digest Builder]
-    TDG -->|bot gửi DM| TA((Tài khoản TA\nphụ trách Lab/LT))
 ```
 
 **Thành phần & interface:**
@@ -67,7 +63,6 @@ flowchart LR
 | RAG Core | Chroma + OpenAI API — embeddings `text-embedding-3-small`, chat `gpt-5-mini` (nâng `gpt-5` nếu cần chất lượng) | retrieval top-k → prompt sinh answer + citation + confidence → quyết định answer/clarify/refuse | hàm `answer(question) -> {answer, citations, action, confidence}` |
 | Knowledge Base | YAML/Markdown trong repo + ingest từ Discord | `schedule.yaml`, `faq/*.md` theo loại buổi, tài liệu buổi học, **thông báo chính thức ingest từ kênh `thông-báo`** (citation = jump-link + ngày đăng) | build script → Chroma |
 | Web UI | React + Vite + Tailwind | 3 tab: News (lọc theo loại tin) · Schedule (lịch + tài liệu + FAQ từng buổi) · Chat (widget gọi `/api/ask`) | fetch REST |
-| TA Digest | script Python + bot DM | gom câu hỏi chưa trả lời trong DB theo lớp Lab/LT (map `ta_roster.yaml`: TA ↔ lớp phụ trách) → gửi bản tổng hợp cho tài khoản TA tương ứng, định kỳ hoặc khi TA gõ `/ta-digest` | đọc SQLite, gửi qua bot |
 
 ### Nguồn digest & chiến lược phân loại (theo cấu trúc server thật)
 
@@ -80,12 +75,12 @@ flowchart LR
 | Nhóm kênh | Ví dụ | Cấu trúc | Signal khả dụng cho classifier |
 |---|---|---|---|
 | **Chat từng lớp** | category `thực-hành-lab` → kênh `Lab-D305`, kênh `lý-thuyết` | message thường, không tag | Role tác giả (Lab Coach/TA), link Google Form/Docs, attachment, pinned, reaction — **phương pháp tiếp cận cụ thể (heuristic hay LLM, xử lý link/attachment thế nào) đang nghiên cứu, chốt sau** |
-| **Forum hỏi-đáp** | `🙋-hỏi-đáp` | post có tag sẵn: `Open`/`Solved` + chủ đề (`AI/LLM`, `Frontend`, `Backend`, `Deploy`…) | Tag làm signal phụ trợ; riêng trạng thái `Open` lâu chưa `Solved` được dùng cho TA digest (câu hỏi tồn) |
+| **Forum hỏi-đáp** | `🙋-hỏi-đáp` | post có tag sẵn: `Open`/`Solved` + chủ đề (`AI/LLM`, `Frontend`, `Backend`, `Deploy`…) | Tag làm signal phụ trợ cho classifier |
 | **Forum chia sẻ / bài học** | `📖-bài-học`, `chia-sẻ` | post có tag sẵn: `Tip`, `Tutorial`, `Deep Dive`, `A vs B`, `Postmortem`, `Retro`, `Gotcha`, `Paper/Video` | Tag + reaction/comment làm signal; rank độ nổi bật để chọn "bài đáng đọc" của ngày |
 
 - **Quyết định mở còn lại (chốt trước CP2):** phương pháp phân loại message kênh chat lớp (link, attachment) — An đang nghiên cứu. (Taxonomy loại tin đã chốt như trên — An thiết kế.) Ingestion worker build trước phần đọc kênh + lưu metadata, phần phân loại cắm sau.
 - **Metadata lưu mỗi bài:** kênh, nhóm kênh, lớp (nếu là kênh lớp), tác giả + role, tags, số reaction/comment, timestamp, **jump-link về message gốc** (digest chỉ dẫn link, không copy nội dung dài).
-- **Synergy:** forum `hỏi-đáp` đồng thời là mỏ dữ liệu cho Bình — mining evidence (câu hỏi nguyên văn) và golden set; post `Open` tồn đọng chảy vào TA digest theo đúng cơ chế escalation mục 2.
+- **Synergy:** forum `hỏi-đáp` đồng thời là mỏ dữ liệu cho Bình — mining evidence (câu hỏi nguyên văn) và golden set.
 - Phân loại digest là **lời gọi AI phụ** — khai rõ trong spec; quyết định AI trung tâm được chấm vẫn chỉ là Q&A.
 
 ### Session Hub: nguồn dữ liệu & cơ chế gắn tài liệu
@@ -106,18 +101,18 @@ flowchart LR
 
 | Lớp | Cụ thể hoá trong Companion | Hành vi thiết kế |
 |---|---|---|
-| ① **Nguồn sự thật** | AI có thể bịa deadline, link nộp bài, phòng học | Chỉ sinh câu trả lời từ chunks retrieve được; **mọi claim phải có citation** trỏ về file nguồn; không tìm thấy căn cứ → từ chối + ghi vào hàng đợi gửi TA phụ trách |
+| ① **Nguồn sự thật** | AI có thể bịa deadline, link nộp bài, phòng học | Chỉ sinh câu trả lời từ chunks retrieve được; **mọi claim phải có citation** trỏ về file nguồn; không tìm thấy căn cứ → từ chối rõ ràng + chỉ hướng hỏi tại `#hỏi-đáp` |
 | ② **Mơ hồ / thiếu thông tin** | "Buổi lab tuần này học gì?" — lab nào, tuần nào? | Hỏi lại **tối đa 1 lần** với lựa chọn cụ thể; user không rõ tiếp → đưa link Schedule trên UI |
 | ③ **Ngoài phạm vi / thẩm quyền** | Xin đáp án assignment, hỏi điểm cá nhân, thông tin học viên khác, xin extend deadline | Từ chối hữu ích: nói rõ vì sao + chỉ đúng người/kênh có thẩm quyền (TA, giảng viên) |
 | ④ **Đặc thù domain** | Trả lời **sai deadline/lịch học → học viên nộp muộn, mất điểm thật** (cost-of-error cao nhất) | Ưu tiên precision hơn coverage: confidence thấp → refuse chứ không đoán; câu về deadline luôn kèm nguyên văn nguồn + ngày cập nhật |
 
-**Automation level & lý do (R2):** AI tự trả lời khi retrieval score cao và câu hỏi thuộc scope; **human-in-the-loop** cho mọi case còn lại — câu hỏi vào hàng đợi và TA phụ trách lớp trả lời qua bản tổng hợp. Cost-of-error của sai logistics là học viên mất điểm thật, trong khi cost của escalation chỉ là độ trễ đến bản tổng hợp kế tiếp — và học viên được báo rõ ngay là câu hỏi đã chuyển TA, không bị treo trong im lặng.
+**Automation level & lý do (R2):** AI tự trả lời khi retrieval score cao và câu hỏi thuộc scope; mọi case còn lại bot **từ chối rõ ràng và chỉ hướng người dùng hỏi trực tiếp tại kênh `#hỏi-đáp`**. Cost-of-error của sai logistics là học viên mất điểm thật, trong khi cost của một lời từ chối trung thực chỉ là user mất thêm một bước hỏi ở kênh — đánh đổi này luôn xứng đáng.
 
 **4 đường trải nghiệm (R3):**
 - **Happy:** hỏi "deadline nộp spec?" → answer + citation `[schedule.yaml]` + ngày cập nhật.
 - **Low-confidence:** retrieval mờ → "Mình chưa chắc, ý bạn là buổi Lab 3 hay Workshop 2?" (clarify 1 lần).
-- **Failure:** không có nguồn → "Mình không có thông tin chính thức về việc này — câu hỏi đã được ghi nhận và sẽ gửi TA phụ trách lớp của bạn trong bản tổng hợp gần nhất."
-- **Correction:** user bảo "sai rồi" → xin lỗi, ghi feedback log, đưa câu hỏi + câu trả lời bị báo sai vào hàng đợi để TA phụ trách xác nhận; không cãi.
+- **Failure:** không có nguồn → "Mình không có thông tin chính thức về việc này — bạn hỏi trực tiếp tại kênh `#hỏi-đáp` nhé."
+- **Correction:** user bảo "sai rồi" → xin lỗi, ghi feedback log để nhóm rà lại nguồn; không cãi.
 
 ## 5. Kiểm thử (R4 — 15 điểm)
 
@@ -134,10 +129,10 @@ flowchart LR
 | Ai | Role | Owner chính của | Deliverables (file có tên mình) | Branch |
 |---|---|---|---|---|
 | **An** | **PM / Evidence & Spec Lead** — chủ ý tưởng, thiết kế taxonomy loại tin | Pain, bằng chứng, spec, demo | Khảo sát ≥20 người + log nguyên văn · bảng impact ≥3 ứng viên + ứng viên loại · canvas CP1 · `spec.md` · taxonomy loại tin + phương pháp phân loại · slide 6 trang + demo script | `dev/An` |
-| **Minh** | **Discord Bot & Ingestion** | Toàn bộ phía Discord | Bot 5 lệnh (`/ask` `/digest` `/schedule` `/hub` `/ta-digest`) · ingestion worker 4 nhóm kênh (chat lớp · forum · `tài-nguyên` · `thông-báo`) + phân loại tin + Session Linker · TA digest gửi DM cho tài khoản TA theo lớp · server Discord test (có tài khoản TA giả lập) | `dev/Minh` |
+| **Minh** | **Discord Bot & Ingestion** | Toàn bộ phía Discord | Bot 4 lệnh (`/ask` `/digest` `/schedule` `/hub`) · ingestion worker 4 nhóm kênh (chat lớp · forum · `tài-nguyên` · `thông-báo`) + phân loại tin + Session Linker · server Discord test | `dev/Minh` |
 | **Nghĩa** | **AI Core (RAG)** | Quyết định AI trung tâm | Build KB → Chroma · prompt answer/clarify/refuse + citation · confidence & handoff logic · log traces | `dev/Nghia` |
 | **Hải** | **Web UI** | Trải nghiệm thống nhất | React app 3 tab (News · Schedule · Chat) · chat widget gọi API · thể hiện 4 đường trải nghiệm trên UI | `dev/Hai` |
-| **Bình** | **Data & QA/Eval** | Sự thật & đo lường | Curate `schedule.yaml` (mã buổi chuẩn) + sync khi lịch đổi + FAQ theo loại buổi + `ta_roster.yaml` (TA ↔ lớp phụ trách) · golden set ≥20 · `run_eval.py` + bảng kết quả · mining Discord (số đếm + ≥5 ví dụ nguyên văn + phương pháp) | `dev/Binh` |
+| **Bình** | **Data & QA/Eval** | Sự thật & đo lường | Curate `schedule.yaml` (mã buổi chuẩn) + sync khi lịch đổi + FAQ theo loại buổi · golden set ≥20 · `run_eval.py` + bảng kết quả · mining Discord (số đếm + ≥5 ví dụ nguyên văn + phương pháp) | `dev/Binh` |
 
 Hỗ trợ chéo: An↔Bình chung mảng evidence/validation; Minh↔Nghĩa chung contract API `/api/ask`; Hải dùng mock API cho tới khi Nghĩa xong; An bàn giao taxonomy cho Minh cắm vào ingestion.
 
@@ -171,7 +166,7 @@ repo/
 │   ├── bot/             # Minh — discord bot + ingestion
 │   ├── backend/         # Nghĩa — FastAPI + RAG core
 │   ├── ui/              # Hải — React app
-│   └── data/            # Bình — schedule.yaml, faq/, materials/, ta_roster.yaml (data TỰ TẠO)
+│   └── data/            # Bình — schedule.yaml, faq/, materials/ (data TỰ TẠO)
 ├── eval/
 │   ├── golden_set.yaml
 │   ├── run_eval.py
@@ -197,6 +192,6 @@ repo/
 
 1. **Make clear what the system can do** — UI Chat và `/ask` mở đầu bằng mô tả phạm vi ("mình trả lời từ nguồn chính thức của khoá").
 2. **Show contextually relevant information / sources** — mọi câu trả lời kèm citation bấm được về nguồn.
-3. **Support efficient dismissal & correction** — nút "Báo sai" trên UI + phản hồi "sai rồi" trong Discord → feedback log + vào hàng đợi TA xác nhận.
-4. **Know when to hand off** — confidence thấp/ngoài scope → không đoán, ghi nhận vào hàng đợi và bản tổng hợp gửi đúng TA phụ trách lớp (thiết kế refuse-and-escalate).
+3. **Support efficient dismissal & correction** — nút "Báo sai" trên UI + phản hồi "sai rồi" trong Discord → feedback log để nhóm rà lại nguồn.
+4. **Know when it doesn't know** — confidence thấp/ngoài scope → không đoán, từ chối rõ ràng và chỉ hướng hỏi tại `#hỏi-đáp` (thiết kế refuse trung thực).
 5. **Set expectations about uncertainty** — câu trả lời deadline kèm ngày cập nhật nguồn.

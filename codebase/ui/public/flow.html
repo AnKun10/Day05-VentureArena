@@ -5,7 +5,7 @@
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { background:#0e1015; font-family:"Segoe UI",system-ui,sans-serif; color:#e5e7eb; }
-  #canvas { position:relative; width:1660px; height:980px; background:#0e1015; overflow:hidden; }
+  #canvas { position:relative; width:1660px; height:810px; background:#0e1015; overflow:hidden; }
   .box { position:absolute; background:#151823; border:1px solid #2a3040; border-radius:14px; padding:14px 16px; }
   .box h3 { font-size:13.5px; font-weight:700; color:#fff; margin-bottom:8px; display:flex; align-items:center; gap:7px; }
   .box .sub { font-size:10.5px; color:#8b93a7; margin-top:-6px; margin-bottom:8px; }
@@ -41,16 +41,16 @@
 
   <div class="box" style="left:438px;top:133px;width:302px;height:212px;">
     <h3>⚙️ Ingestion Worker</h3>
-    <div class="item">🏷 <b>Agent phân loại</b> theo taxonomy loại tin <i>(nhóm tự thiết kế)</i></div>
+    <div class="item">🏷 <b>Agent tóm tắt + gắn tag</b> (taxonomy 10 tag: AI Model, AI Skill, API &amp; MCP…)</div>
+    <div class="item">🖼 Lấy <b>ảnh minh hoạ</b> qua API tìm ảnh (vd Tavily)</div>
     <div class="item">🔗 <b>Session Linker</b> — gắn slide/record vào mã buổi (WS-2, LT-11…)</div>
-    <div class="item">📊 Signal: tag forum · role · link · reaction</div>
   </div>
 
   <div class="box" style="left:820px;top:120px;width:306px;height:238px;padding:12px;">
     <h3 style="margin-bottom:6px;">🗄 Lưu trữ</h3>
     <div style="background:#1b1f2c;border-radius:9px;padding:9px 11px;margin-bottom:7px;">
       <div style="font-size:12px;font-weight:700;color:#e8eaf1;">SQLite</div>
-      <div style="font-size:10.5px;color:#8b93a7;line-height:1.5;">posts đã phân loại · hàng đợi câu hỏi tồn · trace log AI</div>
+      <div style="font-size:10.5px;color:#8b93a7;line-height:1.5;">posts + tóm tắt/tags/ảnh · bookmark · trace log AI</div>
     </div>
     <div style="background:#1b1f2c;border-radius:9px;padding:9px 11px;">
       <div style="font-size:12px;font-weight:700;color:#e8eaf1;">Knowledge Base → Chroma</div>
@@ -62,7 +62,7 @@
     <h3>🖥 Web UI thống nhất <span class="tag" style="background:#5865f233;color:#aab4ff;">bot gửi link qua /hub</span></h3>
     <div class="item">📅 <b>Lịch học</b> — calendar tuần · click block → chi tiết buổi + Zoom/slide/record + FAQ</div>
     <div class="item">📚 <b>Tài nguyên</b> — kho slide/record gắn theo mã buổi</div>
-    <div class="item">📰 <b>Bản tin</b> — phân loại theo loại tin · 🔥 hot trend</div>
+    <div class="item">📰 <b>Bản tin</b> — tags + tóm tắt AI + ảnh · 🔥 hot trend · đọc &amp; comment · bookmark</div>
     <div class="item" style="opacity:.55;">💬 Hỏi đáp trên UI <i>(sắp có)</i></div>
   </div>
 
@@ -102,31 +102,17 @@
     <span style="color:#9aa3b5;">"Ý bạn là buổi Lab 3 hay Workshop 2?"</span>
   </div>
   <div class="out" style="left:1250px;top:628px;width:366px;height:78px;border:1px solid #ef444455;">
-    <b style="color:#f87171;">🚫 Thiếu căn cứ / ngoài phạm vi → từ chối</b><br/>
-    <span style="color:#9aa3b5;">báo rõ "đã ghi nhận, TA sẽ trả lời" → vào hàng đợi</span>
-  </div>
-
-  <!-- TA escalation row -->
-  <div class="box" style="left:608px;top:790px;width:302px;height:96px;">
-    <h3>📥 Hàng đợi câu hỏi tồn</h3>
-    <div style="font-size:11px;color:#9aa3b5;line-height:1.5;">câu bị từ chối · bị báo sai · post forum "Open" lâu chưa Solved — gom theo lớp</div>
-  </div>
-  <div class="box" style="left:988px;top:790px;width:250px;height:96px;">
-    <h3>📨 TA Digest Builder</h3>
-    <div style="font-size:11px;color:#9aa3b5;line-height:1.5;">bản tổng hợp theo lớp — định kỳ hoặc lệnh <b style="color:#c3c9d6;">/ta-digest</b></div>
-  </div>
-  <div class="box" style="left:1316px;top:790px;width:300px;height:96px;">
-    <h3>🧑‍🏫 TA phụ trách lớp</h3>
-    <div style="font-size:11px;color:#9aa3b5;line-height:1.5;">tài khoản riêng theo lớp Lab/LT (<b style="color:#c3c9d6;">ta_roster.yaml</b>) → trả lời học viên</div>
+    <b style="color:#f87171;">🚫 Thiếu căn cứ / ngoài phạm vi → từ chối rõ ràng</b><br/>
+    <span style="color:#9aa3b5;">không đoán, không bịa — chỉ hướng hỏi tại #hỏi-đáp</span>
   </div>
 
   <!-- Footer -->
-  <div style="position:absolute;left:44px;top:922px;font-size:11px;color:#5a6172;">
+  <div style="position:absolute;left:44px;top:760px;font-size:11px;color:#5a6172;">
     ⭐ Chấm điểm trên bộ ba <b style="color:#8b93a7;">answer / clarify / refuse</b> — golden set ≥20 case · mọi lời gọi OpenAI được log trace &nbsp;·&nbsp; Demo UI: <b style="color:#8b93a7;">codebase/ui</b> · Kế hoạch: <b style="color:#8b93a7;">MASTERPLAN.md</b>
   </div>
 
   <!-- Wires -->
-  <svg class="wires" width="1660" height="980" viewBox="0 0 1660 980">
+  <svg class="wires" width="1660" height="810" viewBox="0 0 1660 810" preserveAspectRatio="none">
     <defs>
       <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
         <path d="M0,0 L10,5 L0,10 z" fill="#5865f2"/>
@@ -156,11 +142,6 @@
     <line x1="1170" y1="510" x2="1248" y2="470" stroke="#4ade80" stroke-width="2" marker-end="url(#arg)"/>
     <line x1="1170" y1="532" x2="1248" y2="566" stroke="#60a5fa" stroke-width="2" marker-end="url(#arb)"/>
     <line x1="1170" y1="556" x2="1248" y2="664" stroke="#f87171" stroke-width="2" marker-end="url(#arr)"/>
-    <!-- refuse -> queue -->
-    <path d="M 1250 692 C 1080 720, 980 760, 914 806" fill="none" stroke="#f87171" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arr)"/>
-    <!-- queue -> digest -> TA -->
-    <line x1="910" y1="838" x2="986" y2="838" stroke="#5865f2" stroke-width="2" marker-end="url(#ar)"/>
-    <line x1="1238" y1="838" x2="1314" y2="838" stroke="#5865f2" stroke-width="2" marker-end="url(#ar)"/>
   </svg>
 </div>
 </body>
