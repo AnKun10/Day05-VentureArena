@@ -1,0 +1,4 @@
+from .interest_v1 import INTEREST_V1
+
+INTEREST_VERSION = "v1"
+INTEREST_PROMPTS = {"v1": INTEREST_V1}
