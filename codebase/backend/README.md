@@ -42,7 +42,7 @@ python -m recsys.smoke                  # smoke recsys thật (cần OPENAI_API_
 
 Công thức điểm: `score = 0.5*sim(cosine user↔news) + 0.25*eng(log1p(hearts+comments),
 chuẩn hoá theo max) + 0.25*rec(exp(-tuổi_bài/72h))`, sau đó chọn top-k bằng MMR
-(`λ=0.35` — mức đa dạng trung bình yếu, chỉnh trong `recsys/recommend.py::MMR_LAMBDA`)
+(`λ=0.15` — mức đa dạng thấp, chỉnh trong `recsys/recommend.py::MMR_LAMBDA`)
 để giảm trùng lặp giữa các bài được chọn (phạt các ứng viên gần với bài
 đã chọn trước theo cosine similarity).
 

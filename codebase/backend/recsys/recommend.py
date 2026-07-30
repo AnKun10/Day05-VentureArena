@@ -4,8 +4,8 @@ from datetime import datetime
 W_SIM, W_ENG, W_REC = 0.5, 0.25, 0.25
 TAU_HOURS = 72.0
 # Mức ép đa dạng của MMR (biến thể nhân): 0 = tắt, 1 = tối đa.
-# 0.35 = trung bình yếu — bài gần trùng vẫn bị trừ điểm nhưng relevance thắng.
-MMR_LAMBDA = 0.35
+# 0.15 = thấp — gợi ý bám sát relevance, chỉ nén nhẹ bài gần trùng hẳn.
+MMR_LAMBDA = 0.15
 
 
 def cosine(a, b) -> float:
