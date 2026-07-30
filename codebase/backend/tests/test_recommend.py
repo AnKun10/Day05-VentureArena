@@ -55,3 +55,24 @@ def test_negative_sim_clamped_to_zero_and_never_boosted():
     assert by["anti"]["score"] == 0.0                  # clamp
     picked = [s["message_id"] for s in mmr_select(scored, k=2)]
     assert picked == ["pos", "anti"]                   # anti không bao giờ vượt pos
+
+
+def test_blank_profile_gets_no_personalization(tmp_path):
+    from ingest.store import Store
+    from recsys.vectorstore import VectorStore
+    from recsys.recommend import recommend
+    from ingest.models import NewsEnrichment
+    from tests.test_store import make_post
+    s = Store(str(tmp_path / "t.db"))
+    vs = VectorStore(str(tmp_path / "q"), dim=4)
+    s.upsert_user("u1", "An", bio="cũ")
+    vs.upsert_user("u1", [1, 0, 0, 0])          # vector cũ còn trong Qdrant
+    s.save_profile("u1", "h", "", [])            # profile đã bị xoá trắng
+    s.upsert_post(make_post(mid="1"))
+    s.save_enrichment("1", NewsEnrichment(summary_vi="x", tags=["ai-model"],
+                                          image_query="q"), "placeholder", "v1", "t")
+    vs.upsert_news("1", [1, 0, 0, 0], {"message_id": "1", "tags": ["ai-model"],
+                                       "created_at": "2026-07-31T08:00:00",
+                                       "hearts": 5, "comment_count": 0})
+    recs = recommend(s, vs, "u1", k=3)
+    assert recs and all(r["parts"]["sim"] == 0.0 for r in recs)

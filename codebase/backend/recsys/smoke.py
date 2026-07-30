@@ -35,6 +35,10 @@ def main():
             vs.client.close()
         except Exception:
             pass
+        try:
+            store.close()
+        except Exception:
+            pass
         Path(db).unlink(missing_ok=True)
         shutil.rmtree(qpath, ignore_errors=True)
 

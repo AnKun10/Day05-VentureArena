@@ -47,6 +47,9 @@ class Store:
             self.conn.execute("ALTER TABLE posts ADD COLUMN embedded_at TEXT")
         self.conn.commit()
 
+    def close(self) -> None:
+        self.conn.close()
+
     def upsert_post(self, p: RawPost) -> None:
         cur = self.conn.execute(
             "SELECT 1 FROM posts WHERE message_id=?", (p.message_id,))

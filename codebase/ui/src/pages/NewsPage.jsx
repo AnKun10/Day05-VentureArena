@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Bookmark, Flame, Heart, Inbox, MessageSquare, Sparkles } from "lucide-react";
 import { NEWS, NEWS_TAGS, ROLE_COLORS, isHot } from "../data/mock.js";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,7 @@ export default function NewsPage() {
   const [recs, setRecs] = useState(null);
   const [bioDraft, setBioDraft] = useState("");
   const [bioOpen, setBioOpen] = useState(false);
+  const recSeq = useRef(0);
 
   const toggleBookmark = (id) =>
     setBookmarks((prev) => {
@@ -40,10 +41,15 @@ export default function NewsPage() {
 
   const fetchRecs = (uid) => {
     if (uid == null) return;
+    const seq = ++recSeq.current;
     api
       .recommendations(uid, 6)
-      .then((list) => setRecs(list))
-      .catch(() => setRecs(null));
+      .then((list) => {
+        if (seq === recSeq.current) setRecs(list);
+      })
+      .catch(() => {
+        if (seq === recSeq.current) setRecs(null);
+      });
   };
 
   // Đổi user → nạp lại gợi ý
@@ -96,6 +102,45 @@ export default function NewsPage() {
     [tag]
   );
 
+  const renderHotCards = () => (
+    <div className="grid gap-2.5 sm:grid-cols-3">
+      {hot.map((n) => {
+        const roleColor = ROLE_COLORS[n.role] ?? "#64748b";
+        return (
+          <Card
+            key={n.id}
+            size="sm"
+            className="cursor-pointer gap-2 transition-shadow hover:shadow-md"
+            onClick={() => setSelected(n)}
+          >
+            <div className="flex items-center gap-1.5 px-3">
+              <TagBadge tag={n.tags[0]} />
+              <Flame className="ml-auto size-3.5 shrink-0 text-orange-500" />
+              <BookmarkButton
+                active={bookmarks.has(n.id)}
+                onToggle={() => toggleBookmark(n.id)}
+              />
+            </div>
+            <div className="line-clamp-2 min-h-10 px-3 text-sm leading-snug font-semibold">
+              {n.title}
+            </div>
+            <div className="flex items-center gap-1.5 px-3">
+              <Avatar name={n.author} role={n.role} className="size-4.5 text-[9px]" />
+              <span className="truncate text-xs font-medium" style={{ color: roleColor }}>
+                {n.author}
+              </span>
+            </div>
+            <div className="mt-auto flex items-center gap-3 px-3 text-xs text-muted-foreground">
+              <Meta icon={Heart} value={n.hearts} />
+              <Meta icon={MessageSquare} value={n.comments.length} />
+              <span className="ml-auto truncate">{n.time}</span>
+            </div>
+          </Card>
+        );
+      })}
+    </div>
+  );
+
   return (
     <div className="mx-auto max-w-4xl px-6 py-6">
       <div className="mb-5">
@@ -129,103 +174,74 @@ export default function NewsPage() {
                 Sửa bio
               </Button>
             </div>
-            <div className="grid gap-2.5 sm:grid-cols-3">
-              {(recs ?? []).slice(0, 3).map((r) => {
-                const roleColor = ROLE_COLORS[r.author_role] ?? "#64748b";
-                const mockMatch = findMockByTitle(r.title);
-                return (
-                  <Card
-                    key={r.message_id}
-                    size="sm"
-                    className={cn(
-                      "gap-2 transition-shadow hover:shadow-md",
-                      mockMatch && "cursor-pointer"
-                    )}
-                    onClick={mockMatch ? () => setSelected(mockMatch) : undefined}
-                  >
-                    <div className="flex items-center gap-1.5 px-3">
-                      <TagBadge tag={r.tags[0]} />
-                      <div className="ml-auto">
-                        <BookmarkButton
-                          active={false}
-                          onToggle={() => handleRecBookmark(r.message_id)}
-                        />
-                      </div>
-                    </div>
-                    <div className="line-clamp-2 min-h-10 px-3 text-sm leading-snug font-semibold">
-                      {r.title}
-                    </div>
-                    <div className="flex items-center gap-1.5 px-3">
-                      <Avatar name={r.author} role={r.author_role} className="size-4.5 text-[9px]" />
-                      <span
-                        className="truncate text-xs font-medium"
-                        style={{ color: roleColor }}
-                      >
-                        {r.author}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 px-3 text-xs text-muted-foreground">
-                      <Meta icon={Heart} value={r.hearts} />
-                      <Meta icon={MessageSquare} value={r.comment_count} />
-                    </div>
-                    <div className="mt-auto px-3 text-[10px] text-muted-foreground">
-                      ✨ {Math.round(r.parts.sim * 100)}% match · 🔥{" "}
-                      {r.hearts + r.comment_count} · 🕐 {Math.round(r.parts.rec * 100)}% mới
-                    </div>
-                  </Card>
-                );
-              })}
-              {recs !== null && recs.length === 0 && (
-                <p className="col-span-full text-sm text-muted-foreground">
-                  Chưa có gợi ý nào — hãy thử đánh dấu vài bài viết bạn quan tâm.
+            {recs === null ? (
+              <>
+                <p className="mb-2 text-[11px] text-muted-foreground">
+                  Gợi ý cá nhân tạm thời không khả dụng — đang hiển thị hot trend.
                 </p>
-              )}
-            </div>
+                {renderHotCards()}
+              </>
+            ) : (
+              <div className="grid gap-2.5 sm:grid-cols-3">
+                {recs.slice(0, 3).map((r) => {
+                  const roleColor = ROLE_COLORS[r.author_role] ?? "#64748b";
+                  const mockMatch = findMockByTitle(r.title);
+                  return (
+                    <Card
+                      key={r.message_id}
+                      size="sm"
+                      className={cn(
+                        "gap-2 transition-shadow hover:shadow-md",
+                        mockMatch && "cursor-pointer"
+                      )}
+                      onClick={mockMatch ? () => setSelected(mockMatch) : undefined}
+                    >
+                      <div className="flex items-center gap-1.5 px-3">
+                        <TagBadge tag={r.tags[0]} />
+                        <div className="ml-auto">
+                          <BookmarkButton
+                            active={false}
+                            onToggle={() => handleRecBookmark(r.message_id)}
+                          />
+                        </div>
+                      </div>
+                      <div className="line-clamp-2 min-h-10 px-3 text-sm leading-snug font-semibold">
+                        {r.title}
+                      </div>
+                      <div className="flex items-center gap-1.5 px-3">
+                        <Avatar name={r.author} role={r.author_role} className="size-4.5 text-[9px]" />
+                        <span
+                          className="truncate text-xs font-medium"
+                          style={{ color: roleColor }}
+                        >
+                          {r.author}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 px-3 text-xs text-muted-foreground">
+                        <Meta icon={Heart} value={r.hearts} />
+                        <Meta icon={MessageSquare} value={r.comment_count} />
+                      </div>
+                      <div className="mt-auto px-3 text-[10px] text-muted-foreground">
+                        ✨ {Math.round(r.parts.sim * 100)}% match · 🔥{" "}
+                        {r.hearts + r.comment_count} · 🕐 {Math.round(r.parts.rec * 100)}% mới
+                      </div>
+                    </Card>
+                  );
+                })}
+                {recs.length === 0 && (
+                  <p className="col-span-full text-sm text-muted-foreground">
+                    Chưa có gợi ý nào — hãy thử đánh dấu vài bài viết bạn quan tâm.
+                  </p>
+                )}
+              </div>
+            )}
           </>
         ) : (
           <>
             <h2 className="mb-2.5 flex items-center gap-1.5 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
               <Flame className="size-3.5 text-orange-500" /> Hot trend
             </h2>
-            <div className="grid gap-2.5 sm:grid-cols-3">
-              {hot.map((n) => {
-                const roleColor = ROLE_COLORS[n.role] ?? "#64748b";
-                return (
-                  <Card
-                    key={n.id}
-                    size="sm"
-                    className="cursor-pointer gap-2 transition-shadow hover:shadow-md"
-                    onClick={() => setSelected(n)}
-                  >
-                    <div className="flex items-center gap-1.5 px-3">
-                      <TagBadge tag={n.tags[0]} />
-                      <Flame className="ml-auto size-3.5 shrink-0 text-orange-500" />
-                      <BookmarkButton
-                        active={bookmarks.has(n.id)}
-                        onToggle={() => toggleBookmark(n.id)}
-                      />
-                    </div>
-                    <div className="line-clamp-2 min-h-10 px-3 text-sm leading-snug font-semibold">
-                      {n.title}
-                    </div>
-                    <div className="flex items-center gap-1.5 px-3">
-                      <Avatar name={n.author} role={n.role} className="size-4.5 text-[9px]" />
-                      <span
-                        className="truncate text-xs font-medium"
-                        style={{ color: roleColor }}
-                      >
-                        {n.author}
-                      </span>
-                    </div>
-                    <div className="mt-auto flex items-center gap-3 px-3 text-xs text-muted-foreground">
-                      <Meta icon={Heart} value={n.hearts} />
-                      <Meta icon={MessageSquare} value={n.comments.length} />
-                      <span className="ml-auto truncate">{n.time}</span>
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
+            {renderHotCards()}
           </>
         )}
       </div>

@@ -52,7 +52,9 @@ def mmr_select(scored: list[dict], k: int, lam: float = 0.7) -> list[dict]:
 
 
 def recommend(store, vs, user_id: str, k: int = 6) -> list[dict]:
-    user_vec = vs.get_user(user_id)
+    user = store.get_user(user_id)
+    interest = (user.get("interest_summary") or "").strip() if user else ""
+    user_vec = vs.get_user(user_id) if interest else None
     bookmarked = set(store.list_bookmarks(user_id))
     items = [(m, v, p) for m, v, p in vs.all_news() if m not in bookmarked]
     scored = hybrid_scores(user_vec, items, datetime.utcnow())
