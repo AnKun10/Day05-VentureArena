@@ -28,6 +28,10 @@ async def on_ready() -> None:
     log.info("Đăng nhập với tên %s (id=%s)", bot.user, bot.user.id if bot.user else "?")
     guild = discord.Object(id=config.GUILD_ID) if config.GUILD_ID else None
     if guild:
+        # Lệnh khai báo trong cogs/ ở phạm vi global — tree.sync(guild=...) chỉ đẩy lệnh ĐÃ khai riêng
+        # cho guild đó, không tự copy lệnh global sang. Thiếu copy_global_to() thì sync ra 0 lệnh dù bot
+        # đã login thành công (bug thật đã bắt được khi chạy thử lần đầu).
+        bot.tree.copy_global_to(guild=guild)
         synced = await bot.tree.sync(guild=guild)
         log.info("Đã sync %d slash command vào guild test %s", len(synced), config.GUILD_ID)
     else:

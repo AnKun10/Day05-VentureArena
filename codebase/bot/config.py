@@ -14,10 +14,13 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
-DB_PATH = Path(os.getenv("BOT_DB_PATH", BASE_DIR / "bot.sqlite3"))
+# CHÚ Ý: os.getenv(key, default) chỉ dùng default khi biến KHÔNG TỒN TẠI, không phải khi nó rỗng —
+# .env.example để "BOT_DB_PATH=" trống nghĩa là biến tồn tại với giá trị "" (bug thật đã bắt được khi
+# chạy thử: Path("") -> thư mục hiện tại -> sqlite mở file lỗi). Dùng `or` để coi rỗng như chưa set.
+DB_PATH = Path(os.getenv("BOT_DB_PATH") or (BASE_DIR / "bot.sqlite3"))
 
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN", "")
-GUILD_ID = int(os.getenv("DISCORD_GUILD_ID", "0")) or None  # set để sync slash command tức thời (test server)
+GUILD_ID = int(os.getenv("DISCORD_GUILD_ID") or "0") or None  # set để sync slash command tức thời (test server)
 
 # URL Web UI (Hải) — /hub gửi link này
 WEB_UI_URL = os.getenv("WEB_UI_URL", "http://localhost:5173")
