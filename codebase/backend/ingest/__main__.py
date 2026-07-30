@@ -65,12 +65,14 @@ def run_once(store: Store, source, cfg: Config, limit: int = 20,
 
 def main():
     ap = argparse.ArgumentParser(prog="ingest")
-    ap.add_argument("--source", choices=["seed", "discord"], default="seed")
+    ap.add_argument("--source", choices=["seed", "discord", "manifest"], default="seed")
     ap.add_argument("--loop", type=int, default=0, help="phút giữa các lượt; 0 = 1 lượt")
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--limit", type=int, default=20)
     ap.add_argument("--db", default=None)
     ap.add_argument("--seed", default="ingest/seeds/posts.json")
+    ap.add_argument("--manifest",
+                    default="../../data/discord_crawl_dataset_snapshot_2026-07-31/discord_crawl/manifest.json")
     args = ap.parse_args()
 
     cfg = Config.from_env()
@@ -83,6 +85,9 @@ def main():
         vectors = None
     if args.source == "seed":
         source = SeedSource(args.seed)
+    elif args.source == "manifest":
+        from .sources import ManifestSource
+        source = ManifestSource(args.manifest)
     else:
         from .sources import DiscordSource  # Task 8
         source = DiscordSource(cfg.discord_token, cfg.channel_ids, cfg.guild_id)
