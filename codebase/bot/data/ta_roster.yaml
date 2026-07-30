@@ -11,11 +11,11 @@
 # trách phòng đó ở cả 2 khoá thì cứ khai 2 dòng, cùng discord_id là được.
 
 - class: "K3-Lab-D305"
-  ta_name: "M.A"
-  discord_id: ""
+  ta_name: "M.A (test — Minh's own account)"
+  discord_id: "1011839998108110959"
 - class: "K4-Lab-D305"
-  ta_name: ""
-  discord_id: ""
+  ta_name: "test — Minh's own account"
+  discord_id: "1011839998108110959"
 - class: "K3-Lab-D303"
   ta_name: "H.T"
   discord_id: ""
