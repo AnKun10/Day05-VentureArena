@@ -61,6 +61,7 @@ class DiscordSource:
         import discord
 
         results: list[RawPost] = []
+        errors: list[str] = []
         intents = discord.Intents.default()
         intents.message_content = True
         client = discord.Client(intents=intents)
@@ -103,8 +104,13 @@ class DiscordSource:
                             thread.id, key, thread.name, starter.content,
                             starter.author.display_name, roles, starter.jump_url,
                             thread.created_at.isoformat(), hearts, comments))
+            except Exception as exc:
+                errors.append(f"{type(exc).__name__}: {exc}")
             finally:
                 await client.close()
 
         asyncio.run(client.start(self.token))
+        if errors:
+            print(f"[discord] fetch incomplete: {errors[0]} "
+                  f"(returned {len(results)} posts truoc khi loi)")
         return results
