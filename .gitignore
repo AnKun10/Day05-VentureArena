@@ -5,3 +5,7 @@ node_modules/
 dist/
 .vite/
 .playwright-mcp/
+*.db
+.venv/
+__pycache__/
+codebase/backend/eval/traces/
