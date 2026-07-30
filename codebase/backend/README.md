@@ -26,6 +26,9 @@ enrich lại (không tốn phí) trừ khi `--force`. Trace từng lời gọi A
 ## Recommendations (recsys)
 ```bash
 python -m recsys.smoke                  # smoke recsys thật (cần OPENAI_API_KEY; ~13 call nhỏ)
+# Windows: đặt PYTHONIOENCODING=utf-8 trước khi chạy smoke để tránh
+# UnicodeEncodeError khi in tiếng Việt (cp1252 console):
+#   $env:PYTHONIOENCODING="utf-8"; .venv\Scripts\python.exe -m recsys.smoke
 ```
 
 3 endpoint mới trong `api.main` (cộng thêm users/bookmarks để phục vụ chúng):
@@ -45,5 +48,7 @@ chuẩn hoá theo max) + 0.25*rec(exp(-tuổi_bài/72h))`, sau đó chọn top-k
 Qdrant chạy embedded trong 1 process (chưa hỗ trợ đa process cùng mở 1
 `qdrant_data/`) — muốn chạy `python -m ingest` (embed) thì tắt `uvicorn` trước, hoặc
 chấp nhận log `[recsys] qdrant busy/unavailable: ... (bỏ qua embed)` và ingest chạy
-tiếp phần enrich/không embed. Thư mục `qdrant_data/` (và `smoke_qdrant/` của
-smoke test) không commit vào git.
+tiếp phần enrich/không embed. Thư mục `qdrant_data/` không commit vào git (xem
+`.gitignore` gốc); `smoke_qdrant/` không cần khai báo gitignore vì
+`recsys/smoke.py` tự dọn (`shutil.rmtree`) sau mỗi lần chạy — nếu script crash
+giữa chừng, xoá thủ công `smoke-rec.db` và `smoke_qdrant/` trước khi chạy lại.
