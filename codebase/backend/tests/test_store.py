@@ -43,6 +43,16 @@ def test_failed_counter_stops_at_3(tmp_path):
     assert s.pending_enrichment() == []                    # đạt 3 lần → dừng retry
 
 
+def test_failed_3x_surfaces_with_fallback(tmp_path):
+    s = Store(str(tmp_path / "t.db"))
+    s.upsert_post(make_post())
+    for _ in range(3):
+        s.mark_enrich_failed("100", "fallback")
+    news = s.list_news()
+    assert len(news) == 1 and news[0]["tags"] == ["other"]
+    assert news[0]["image_source"] == "placeholder"
+
+
 def test_checkpoint_monotonic(tmp_path):
     s = Store(str(tmp_path / "t.db"))
     assert s.get_checkpoint("bai-hoc") == 0

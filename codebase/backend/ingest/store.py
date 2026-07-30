@@ -79,6 +79,10 @@ class Store:
             "UPDATE posts SET enrich_failed = enrich_failed + 1, summary=?, "
             "tags=? WHERE message_id=?",
             (fallback_summary, json.dumps(["other"]), message_id))
+        self.conn.execute(
+            "UPDATE posts SET enriched_at=?, image_source='placeholder' "
+            "WHERE message_id=? AND enrich_failed >= 3",
+            (_now(), message_id))
         self.conn.commit()
 
     def get_checkpoint(self, channel: str) -> int:

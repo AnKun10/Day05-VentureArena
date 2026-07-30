@@ -113,4 +113,5 @@ class DiscordSource:
         if errors:
             print(f"[discord] fetch incomplete: {errors[0]} "
                   f"(returned {len(results)} posts truoc khi loi)")
+            raise RuntimeError(f"discord fetch incomplete: {errors[0]}")
         return results

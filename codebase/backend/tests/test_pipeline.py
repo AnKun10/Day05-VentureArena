@@ -1,10 +1,12 @@
+from pathlib import Path
+
 from ingest.__main__ import run_once
 from ingest.config import Config
 from ingest.models import NewsEnrichment
 from ingest.sources import SeedSource
 from ingest.store import Store
 
-SEED = "ingest/seeds/posts.json"
+SEED = str(Path(__file__).resolve().parent.parent / "ingest" / "seeds" / "posts.json")
 
 
 def fake_runner(text):
@@ -17,7 +19,7 @@ def failing_runner(text):
 
 
 def test_run_once_then_enrich_once(tmp_path, monkeypatch):
-    monkeypatch.chdir(tmp_path.parent if False else ".")  # giữ cwd backend
+    monkeypatch.chdir(tmp_path)  # tránh ghi đè trace thật ở eval/traces/ingest
     store = Store(str(tmp_path / "t.db"))
     cfg = Config()
     stats1 = run_once(store, SeedSource(SEED), cfg, runner=fake_runner)
@@ -26,7 +28,8 @@ def test_run_once_then_enrich_once(tmp_path, monkeypatch):
     assert stats2["fetched"] == 0 and stats2["enriched"] == 0  # checkpoint + enrich-once
 
 
-def test_run_once_force_reenriches(tmp_path):
+def test_run_once_force_reenriches(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
     store = Store(str(tmp_path / "t.db"))
     cfg = Config()
     run_once(store, SeedSource(SEED), cfg, runner=fake_runner)
@@ -34,7 +37,8 @@ def test_run_once_force_reenriches(tmp_path):
     assert stats["enriched"] == 10
 
 
-def test_run_once_failure_marks_and_continues(tmp_path):
+def test_run_once_failure_marks_and_continues(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
     store = Store(str(tmp_path / "t.db"))
     cfg = Config()
     stats = run_once(store, SeedSource(SEED), cfg, runner=failing_runner)
@@ -52,7 +56,8 @@ class TaiNguyenSource:
                         jump_url="https://discord.com/x/2001")]
 
 
-def test_run_once_routes_tai_nguyen_to_resources(tmp_path):
+def test_run_once_routes_tai_nguyen_to_resources(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
     store = Store(str(tmp_path / "t.db"))
     stats = run_once(store, TaiNguyenSource(), Config(), runner=fake_runner)
     assert stats["fetched"] == 1 and stats["enriched"] == 0
