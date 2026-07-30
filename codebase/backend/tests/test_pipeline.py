@@ -41,3 +41,22 @@ def test_run_once_failure_marks_and_continues(tmp_path):
     assert stats["failed"] == 10 and stats["enriched"] == 0
     row = store.get_news("1001")
     assert row["enrich_failed"] == 1 and row["tags"] == ["other"]
+
+
+class TaiNguyenSource:
+    def fetch(self, since):
+        from ingest.models import RawPost
+        return [RawPost(message_id="2001", channel="tai-nguyen",
+                        title="Slide Workshop WS2: Problem -> MVP Canvas",
+                        content="", author="BTC", created_at="2026-07-31T08:00:00",
+                        jump_url="https://discord.com/x/2001")]
+
+
+def test_run_once_routes_tai_nguyen_to_resources(tmp_path):
+    store = Store(str(tmp_path / "t.db"))
+    stats = run_once(store, TaiNguyenSource(), Config(), runner=fake_runner)
+    assert stats["fetched"] == 1 and stats["enriched"] == 0
+    res = store.list_resources()
+    assert len(res) == 1
+    assert res[0]["session_code"] == "WS-2" and res[0]["kind"] == "slide"
+    assert store.get_checkpoint("tai-nguyen") == 2001
