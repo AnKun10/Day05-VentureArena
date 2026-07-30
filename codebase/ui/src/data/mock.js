@@ -125,7 +125,7 @@ export const tagOf = (id) => NEWS_TAGS.find((t) => t.id === id);
 
 // Ảnh minh hoạ demo: SVG placeholder theo màu tag đầu tiên.
 // Production: agent lấy ảnh thật qua API tìm ảnh (vd Tavily) — xem MASTERPLAN.
-const thumb = (color, glyph) =>
+export const thumb = (color, glyph) =>
   "data:image/svg+xml;utf8," +
   encodeURIComponent(
     `<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240">

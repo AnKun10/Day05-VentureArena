@@ -7,6 +7,8 @@ async function j(url, opts) {
 }
 
 export const api = {
+  news: () => j(`${API_BASE}/api/news`),
+  newsDetail: (id) => j(`${API_BASE}/api/news/${id}`),
   users: () => j(`${API_BASE}/api/users`),
   setBio: (id, bio) =>
     j(`${API_BASE}/api/users/${id}/bio`, {

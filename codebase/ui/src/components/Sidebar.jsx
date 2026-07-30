@@ -56,7 +56,7 @@ export default function Sidebar({ page, onNavigate }) {
             Demo
           </Badge>
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Mock data — chưa nối backend. Mở từ Discord bằng lệnh{" "}
+            Bản tin & gợi ý lấy từ backend (offline → mock). Mở từ Discord bằng lệnh{" "}
             <kbd className="rounded border bg-muted px-1 py-0.5 font-mono text-[10px] text-foreground">
               /hub
             </kbd>

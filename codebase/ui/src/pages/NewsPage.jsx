@@ -1,12 +1,40 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Bookmark, Flame, Heart, Inbox, MessageSquare, Sparkles } from "lucide-react";
-import { NEWS, NEWS_TAGS, ROLE_COLORS, isHot } from "../data/mock.js";
+import { NEWS, NEWS_TAGS, ROLE_COLORS, isHot, tagOf, thumb } from "../data/mock.js";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import NewsModal, { Avatar, TagBadge, TAG_ICONS } from "../components/NewsModal.jsx";
+
+const CHANNEL_LABELS = { "chia-se": "#chia-sẻ", "bai-hoc": "#bài-học", "tai-nguyen": "#tài-nguyên" };
+
+const relTime = (iso) => {
+  if (!iso) return "";
+  const mins = Math.max(0, (Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 60) return `${Math.round(mins)} phút trước`;
+  if (mins < 1440) return `${Math.round(mins / 60)} giờ trước`;
+  return `${Math.round(mins / 1440)} ngày trước`;
+};
+
+// Chuẩn hoá bài từ API (/api/news, /api/recommendations) về shape UI dùng chung với mock
+const fromApi = (n) => {
+  const tags = n.tags?.length ? n.tags : ["other"];
+  return {
+    ...n,
+    id: n.message_id,
+    aiSummary: n.summary || "",
+    tags,
+    image: n.image_url || thumb(tagOf(tags[0])?.color ?? "#64748b", "📰"),
+    author: n.author || "(ẩn danh)",
+    role: n.author_role || "Học viên",
+    channel: CHANNEL_LABELS[n.channel] ?? n.channel,
+    commentCount: n.comment_count ?? 0,
+    time: relTime(n.created_at),
+    url: n.jump_url || "#",
+  };
+};
 
 export default function NewsPage() {
   const [tag, setTag] = useState("all");
@@ -28,7 +56,10 @@ export default function NewsPage() {
       return next;
     });
 
-  // Mount: nạp danh sách user demo. Lỗi (backend chưa chạy) → users=null (chế độ offline: giữ Hot trend mock).
+  // Feed bản tin từ backend (data thật đã ingest+enrich); lỗi → null (offline, dùng mock)
+  const [apiNews, setApiNews] = useState(null);
+
+  // Mount: nạp users + bản tin thật. Lỗi (backend chưa chạy) → chế độ offline với mock.
   useEffect(() => {
     api
       .users()
@@ -37,7 +68,36 @@ export default function NewsPage() {
         if (list.length) setSelectedUser(list[0].user_id);
       })
       .catch(() => setUsers(null));
+    api
+      .news()
+      .then((list) => setApiNews(list.map(fromApi)))
+      .catch(() => setApiNews(null));
   }, []);
+
+  // Mở modal chi tiết: online lấy content + comments thật; offline dùng object mock sẵn có
+  const openDetail = (item) => {
+    if (apiNews === null || item.message_id == null) {
+      setSelected(item);
+      return;
+    }
+    api
+      .newsDetail(item.message_id)
+      .then((d) =>
+        setSelected({
+          ...fromApi(d),
+          content: d.content || "",
+          comments: (d.comments || []).map((c) => ({
+            author: c.author || "(ẩn danh)",
+            role: c.author_role || "Học viên",
+            time: relTime(c.created_at),
+            text: c.content,
+          })),
+        })
+      )
+      .catch(() =>
+        setSelected({ ...item, content: item.content || item.aiSummary || "", comments: item.comments || [] })
+      );
+  };
 
   const fetchRecs = (uid) => {
     if (uid == null) return;
@@ -78,28 +138,53 @@ export default function NewsPage() {
       .catch(() => {});
   };
 
-  // Rec card chỉ mở modal nếu tìm được bài mock cùng title (dữ liệu API chưa có content/comments đầy đủ)
-  const findMockByTitle = (title) => NEWS.find((n) => n.title === title);
-
   const handleRecBookmark = (messageId) => {
     if (selectedUser == null) return;
     api
       .setBookmark(selectedUser, messageId, true)
-      .then(() => fetchRecs(selectedUser))
+      .then(() => {
+        setBookmarks((prev) => new Set(prev).add(messageId));
+        fetchRecs(selectedUser);
+      })
       .catch(() => {});
   };
 
+  // Bookmark trên feed: online + có user → sync API rồi refetch gợi ý; offline → local
+  const handleFeedBookmark = (id) => {
+    const on = !bookmarks.has(id);
+    toggleBookmark(id);
+    if (apiNews !== null && selectedUser != null) {
+      api
+        .setBookmark(selectedUser, id, on)
+        .then(() => fetchRecs(selectedUser))
+        .catch(() => {});
+    }
+  };
+
+  // Đổi user → đồng bộ lại danh sách bookmark từ server
+  useEffect(() => {
+    if (selectedUser == null || apiNews === null) return;
+    api
+      .bookmarks(selectedUser)
+      .then((ids) => setBookmarks(new Set(ids)))
+      .catch(() => {});
+  }, [selectedUser, apiNews]);
+
+  const sourceNews = apiNews ?? NEWS;
   const hot = useMemo(
     () =>
-      [...NEWS]
-        .filter(isHot)
-        .sort((a, b) => b.hearts + b.comments.length - (a.hearts + a.comments.length))
+      [...sourceNews]
+        .sort(
+          (a, b) =>
+            b.hearts + (b.commentCount ?? b.comments.length) -
+            (a.hearts + (a.commentCount ?? a.comments.length))
+        )
         .slice(0, 3),
-    []
+    [sourceNews]
   );
   const feed = useMemo(
-    () => NEWS.filter((n) => tag === "all" || n.tags.includes(tag)),
-    [tag]
+    () => sourceNews.filter((n) => tag === "all" || n.tags.includes(tag)),
+    [sourceNews, tag]
   );
 
   const renderHotCards = () => (
@@ -111,14 +196,14 @@ export default function NewsPage() {
             key={n.id}
             size="sm"
             className="cursor-pointer gap-2 transition-shadow hover:shadow-md"
-            onClick={() => setSelected(n)}
+            onClick={() => openDetail(n)}
           >
             <div className="flex items-center gap-1.5 px-3">
               <TagBadge tag={n.tags[0]} />
               <Flame className="ml-auto size-3.5 shrink-0 text-orange-500" />
               <BookmarkButton
                 active={bookmarks.has(n.id)}
-                onToggle={() => toggleBookmark(n.id)}
+                onToggle={() => handleFeedBookmark(n.id)}
               />
             </div>
             <div className="line-clamp-2 min-h-10 px-3 text-sm leading-snug font-semibold">
@@ -132,7 +217,7 @@ export default function NewsPage() {
             </div>
             <div className="mt-auto flex items-center gap-3 px-3 text-xs text-muted-foreground">
               <Meta icon={Heart} value={n.hearts} />
-              <Meta icon={MessageSquare} value={n.comments.length} />
+              <Meta icon={MessageSquare} value={n.commentCount ?? n.comments.length} />
               <span className="ml-auto truncate">{n.time}</span>
             </div>
           </Card>
@@ -185,22 +270,18 @@ export default function NewsPage() {
               <div className="grid gap-2.5 sm:grid-cols-3">
                 {recs.slice(0, 6).map((r) => {
                   const roleColor = ROLE_COLORS[r.author_role] ?? "#64748b";
-                  const mockMatch = findMockByTitle(r.title);
                   return (
                     <Card
                       key={r.message_id}
                       size="sm"
-                      className={cn(
-                        "gap-2 transition-shadow hover:shadow-md",
-                        mockMatch && "cursor-pointer"
-                      )}
-                      onClick={mockMatch ? () => setSelected(mockMatch) : undefined}
+                      className="cursor-pointer gap-2 transition-shadow hover:shadow-md"
+                      onClick={() => openDetail(r)}
                     >
                       <div className="flex items-center gap-1.5 px-3">
                         <TagBadge tag={r.tags[0]} />
                         <div className="ml-auto">
                           <BookmarkButton
-                            active={false}
+                            active={bookmarks.has(r.message_id)}
                             onToggle={() => handleRecBookmark(r.message_id)}
                           />
                         </div>
@@ -268,8 +349,8 @@ export default function NewsPage() {
             key={n.id}
             n={n}
             bookmarked={bookmarks.has(n.id)}
-            onBookmark={() => toggleBookmark(n.id)}
-            onOpen={() => setSelected(n)}
+            onBookmark={() => handleFeedBookmark(n.id)}
+            onOpen={() => openDetail(n)}
           />
         ))}
         {feed.length === 0 && (
@@ -309,11 +390,15 @@ function NewsCard({ n, bookmarked, onBookmark, onOpen }) {
       className="cursor-pointer flex-row gap-0 p-0 transition-shadow hover:shadow-md"
       onClick={onOpen}
     >
-      {/* Ảnh phủ kín góc trái block (production: AI lấy qua API tìm ảnh, vd Tavily) */}
+      {/* Ảnh phủ kín góc trái block (Tavily; host chặn hotlink → placeholder theo màu tag) */}
       <img
         src={n.image}
         alt=""
         className="hidden w-40 shrink-0 self-stretch object-cover sm:block"
+        onError={(e) => {
+          e.currentTarget.onerror = null;
+          e.currentTarget.src = thumb(tagOf(n.tags[0])?.color ?? "#64748b", "📰");
+        }}
       />
 
       <div className="flex min-w-0 flex-1 flex-col gap-1.5 p-4">
@@ -323,7 +408,7 @@ function NewsCard({ n, bookmarked, onBookmark, onOpen }) {
             {n.tags.map((tg) => (
               <TagBadge key={tg} tag={tg} />
             ))}
-            {isHot(n) && <Flame className="size-3.5 text-orange-500" />}
+            {(n.hot ?? isHot(n)) && <Flame className="size-3.5 text-orange-500" />}
           </div>
           <div className="ml-auto flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
             <span>{n.time}</span>
@@ -353,7 +438,7 @@ function NewsCard({ n, bookmarked, onBookmark, onOpen }) {
           <span className="font-mono">{n.channel}</span>
           <span className="text-muted-foreground/40">·</span>
           <Meta icon={Heart} value={n.hearts} />
-          <Meta icon={MessageSquare} value={n.comments.length} />
+          <Meta icon={MessageSquare} value={n.commentCount ?? n.comments.length} />
         </div>
       </div>
     </Card>

@@ -15,7 +15,7 @@ import {
   Wand2,
   Wrench,
 } from "lucide-react";
-import { ROLE_COLORS, tagOf } from "../data/mock.js";
+import { ROLE_COLORS, tagOf, thumb } from "../data/mock.js";
 
 // Icon cho 10 tag taxonomy — dùng chung cho badge và filter chip
 export const TAG_ICONS = {
@@ -87,7 +87,15 @@ export default function NewsModal({ news: n, onClose }) {
           </div>
         </DialogHeader>
 
-        <img src={n.image} alt="" className="h-44 w-full rounded-lg border object-cover" />
+        <img
+          src={n.image}
+          alt=""
+          className="h-44 w-full rounded-lg border object-cover"
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = thumb(tagOf(n.tags[0])?.color ?? "#64748b", "📰");
+          }}
+        />
 
         {/* Tóm tắt AI */}
         <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
@@ -118,7 +126,9 @@ export default function NewsModal({ news: n, onClose }) {
             variant="outline"
             size="sm"
             className="ml-auto"
-            onClick={(e) => e.preventDefault()}
+            onClick={() => {
+              if (n.url && n.url !== "#") window.open(n.url, "_blank", "noopener");
+            }}
           >
             Mở trên Discord <ArrowUpRight data-icon="inline-end" />
           </Button>
