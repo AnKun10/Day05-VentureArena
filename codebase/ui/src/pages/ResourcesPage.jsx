@@ -143,7 +143,7 @@ function ResourceRow({ r }) {
           {r.note && (
             <>
               <span className="text-muted-foreground/40">·</span>
-              <span className="flex items-center gap-1 text-amber-400/90">
+              <span className="flex items-center gap-1 text-amber-600">
                 <Lock className="size-3" /> {r.note}
               </span>
             </>

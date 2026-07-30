@@ -22,7 +22,7 @@ Tab **Hỏi đáp** (chat với agent) để chỗ sẵn trên sidebar — nối
 
 ## Chỗ cần sửa khi có quyết định chính thức
 
-- `src/data/mock.js` → `NEWS_CATEGORIES`: **taxonomy loại tin là placeholder**, nhóm chốt bộ chính thức sau — sửa mảng này là toàn UI đổi theo.
+- `src/data/mock.js` → `NEWS_TAGS`: **taxonomy 10 tag đã chốt** (AI Model, AI Skill, AI Tools, API & MCP, System Design, UI/UX, Dataset, Soft Skills, Survey, Other) — 1 bài nhiều tag; AI agent gắn tag + tóm tắt + lấy ảnh qua API (vd Tavily) khi nối backend. Ảnh demo là SVG placeholder sinh trong `thumb()`.
 - `src/data/mock.js` → `RAW_SESSIONS`: lịch demo sinh quanh tuần hiện tại; thay bằng API `/api/schedule` khi backend sẵn sàng.
 - Mọi link `url: "#"` là mock — thay bằng link thật / jump-link Discord.
 
@@ -30,7 +30,7 @@ Tab **Hỏi đáp** (chat với agent) để chỗ sẵn trên sidebar — nối
 
 React 19 + Vite 6 + Tailwind CSS 4 + **shadcn/ui** (Base UI primitives, style new-york, JS/JSX).
 
-- Design tokens trong `src/index.css` (`.dark` block) — dark-only, base zinc, 1 accent indigo (`--primary`); đổi màu thương hiệu chỉ cần sửa `--primary`/`--ring`.
+- Design tokens trong `src/index.css` (`:root`) — **light minimalism theo tông VLearn**: nền xám nhạt, card trắng, chữ navy, 1 accent xanh dương (`--primary`); đổi màu thương hiệu chỉ cần sửa `--primary`/`--ring`. Block `.dark` giữ sẵn nếu cần dark mode.
 - Font: Geist Sans (UI) + Geist Mono (giờ, mã buổi, số liệu) — self-host qua fontsource.
 - Component gốc trong `src/components/ui/` (button, badge, card, dialog, accordion, input, separator) — thêm mới bằng `npx shadcn@latest add <component>`.
 - Icons: lucide-react. Không router — chuyển trang bằng state trong `App.jsx`.

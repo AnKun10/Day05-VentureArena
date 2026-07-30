@@ -73,13 +73,17 @@ flowchart LR
 
 **Nguyên tắc:** loại tin là **taxonomy do nhóm tự thiết kế** (không dùng tag Discord làm loại tin). Agent phân loại mỗi bài viết vào taxonomy đó; mọi metadata của Discord — tag forum, role tác giả, link/attachment, pinned, reaction — chỉ là **tín hiệu đầu vào (signal)** cho classifier, không phải nhãn đầu ra.
 
+**Taxonomy ĐÃ CHỐT (10 tag, 1 bài có thể nhiều tag):** `AI Model` · `AI Skill` · `AI Tools` · `API & MCP` · `System Design` · `UI/UX` · `Dataset` · `Soft Skills` · `Survey` · `Other`.
+
+**Pipeline bản tin:** agent lấy bài đăng từ kênh `chia-sẻ`, `bài-học` → **tóm tắt 1-3 câu** → **gắn tag** theo taxonomy trên → **lấy ảnh minh hoạ** liên quan qua API tìm ảnh (vd Tavily) → hiển thị block bản tin trên UI (ảnh + tags + tiêu đề + tóm tắt AI + author theo màu role + tim/comment; user **bookmark** được bài và **bấm vào block để đọc nội dung + comment ngay trên UI**).
+
 | Nhóm kênh | Ví dụ | Cấu trúc | Signal khả dụng cho classifier |
 |---|---|---|---|
 | **Chat từng lớp** | category `thực-hành-lab` → kênh `Lab-D305`, kênh `lý-thuyết` | message thường, không tag | Role tác giả (Lab Coach/TA), link Google Form/Docs, attachment, pinned, reaction — **phương pháp tiếp cận cụ thể (heuristic hay LLM, xử lý link/attachment thế nào) đang nghiên cứu, chốt sau** |
 | **Forum hỏi-đáp** | `🙋-hỏi-đáp` | post có tag sẵn: `Open`/`Solved` + chủ đề (`AI/LLM`, `Frontend`, `Backend`, `Deploy`…) | Tag làm signal phụ trợ; riêng trạng thái `Open` lâu chưa `Solved` được dùng cho TA digest (câu hỏi tồn) |
 | **Forum chia sẻ / bài học** | `📖-bài-học`, `chia-sẻ` | post có tag sẵn: `Tip`, `Tutorial`, `Deep Dive`, `A vs B`, `Postmortem`, `Retro`, `Gotcha`, `Paper/Video` | Tag + reaction/comment làm signal; rank độ nổi bật để chọn "bài đáng đọc" của ngày |
 
-- **Quyết định mở (chốt trước CP2):** ① bộ loại tin (taxonomy) — người thiết kế: **An** (chủ ý tưởng); ② phương pháp phân loại message kênh chat (link, attachment) — An đang nghiên cứu. Ingestion worker build trước phần đọc kênh + lưu metadata, phần phân loại cắm sau khi taxonomy chốt.
+- **Quyết định mở còn lại (chốt trước CP2):** phương pháp phân loại message kênh chat lớp (link, attachment) — An đang nghiên cứu. (Taxonomy loại tin đã chốt như trên — An thiết kế.) Ingestion worker build trước phần đọc kênh + lưu metadata, phần phân loại cắm sau.
 - **Metadata lưu mỗi bài:** kênh, nhóm kênh, lớp (nếu là kênh lớp), tác giả + role, tags, số reaction/comment, timestamp, **jump-link về message gốc** (digest chỉ dẫn link, không copy nội dung dài).
 - **Synergy:** forum `hỏi-đáp` đồng thời là mỏ dữ liệu cho Bình — mining evidence (câu hỏi nguyên văn) và golden set; post `Open` tồn đọng chảy vào TA digest theo đúng cơ chế escalation mục 2.
 - Phân loại digest là **lời gọi AI phụ** — khai rõ trong spec; quyết định AI trung tâm được chấm vẫn chỉ là Q&A.
