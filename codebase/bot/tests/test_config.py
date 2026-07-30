@@ -39,6 +39,21 @@ class TestClassifyChannel(unittest.TestCase):
         self.assertEqual(config.class_code_for_channel("Lec-D302"), "Lec-D302")
         self.assertIsNone(config.class_code_for_channel("lý-thuyết"))
 
+    def test_cohort_from_category(self):
+        self.assertEqual(config.cohort_from_category("LỚP HỌC - KHOÁ 3"), "K3")
+        self.assertEqual(config.cohort_from_category("LỚP HỌC - KHOÁ 4"), "K4")
+        self.assertIsNone(config.cohort_from_category("CỘNG ĐỒNG"))
+        self.assertIsNone(config.cohort_from_category(None))
+
+    def test_same_room_number_in_different_cohorts_gets_distinct_class_code(self):
+        # Bug đã bắt được: Khoá 3 và Khoá 4 đều có phòng "Lab-D305" riêng (2 thread khác nhau, cùng tên) —
+        # không tách theo khoá thì escalation của học viên 2 khoá bị gộp nhầm vào 1 mã lớp khi route cho TA.
+        k3 = config.class_code_for_channel("Lab-D305", cohort=config.cohort_from_category("LỚP HỌC - KHOÁ 3"))
+        k4 = config.class_code_for_channel("Lab-D305", cohort=config.cohort_from_category("LỚP HỌC - KHOÁ 4"))
+        self.assertEqual(k3, "K3-Lab-D305")
+        self.assertEqual(k4, "K4-Lab-D305")
+        self.assertNotEqual(k3, k4)
+
     def test_unrelated_channels_ignored(self):
         for name in ["🔝-activity", "🤖-gõ-commands", "💬-chung", "OFFICE HOURS - KÊNH 01"]:
             with self.subTest(name=name):

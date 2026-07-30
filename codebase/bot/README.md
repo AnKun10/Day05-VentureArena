@@ -17,6 +17,9 @@ xem kiến trúc tổng thể + phân công ở `MASTERPLAN.md` §3/§6.
   `Lec-D302`...) là 1 **thread** riêng bên trong, giống hệt cách `hỏi-đáp`/`chia-sẻ`/`bài-học` vận hành.
   Đã sửa `class_code_for_channel()` soi trên tên thread thay vì tên forum cha (bug thật đã bắt được,
   xem `tests/test_ingestion.py`).
+- ⚠️ **Khoá 3 và Khoá 4 dùng chung số phòng** (cả 2 khoá đều có riêng một "Lab-D305") — mã lớp giờ có
+  tiền tố khoá (`K3-Lab-D305` / `K4-Lab-D305`), suy từ category cha `LỚP HỌC - KHOÁ x` qua
+  `config.cohort_from_category()`. `data/ta_roster.yaml` đã cập nhật theo format này.
 - ⏳ **Chưa làm**: nối bot vào server Discord thật/test thật (cần token + mời bot); phân loại tin theo
   taxonomy chính thức (chờ An chốt — cột `category` đang để trống, cắm qua `apply_category()`); DM thật
   cho TA (cần `ta_roster.yaml` điền `discord_id` thật — hiện là placeholder).

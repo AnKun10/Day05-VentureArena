@@ -19,13 +19,20 @@ import db
 from ingestion.listener import IngestionCog
 
 
-def _make_thread_message(*, thread_name: str, parent_name: str, content: str = "noi dung demo"):
+def _make_thread_message(*, thread_name: str, parent_name: str, category_name: str | None = None, content: str = "noi dung demo"):
     parent = MagicMock()
     parent.name = parent_name
+    if category_name is not None:
+        parent.category = MagicMock()
+        parent.category.name = category_name
+    else:
+        parent.category = None
 
     thread = MagicMock(spec=discord.Thread)
     thread.name = thread_name
-    thread.id = abs(hash(thread_name)) % 10_000_000
+    # Discord luôn gán ID (snowflake) khác nhau dù 2 thread trùng tên (vd "Lab-D305" ở cả 2 khoá) —
+    # băm thêm category_name để mock không vô tình trùng ID giữa các case test.
+    thread.id = abs(hash((thread_name, category_name))) % 10_000_000
     thread.parent = parent
     thread.applied_tags = []
     thread.message_count = 5
@@ -74,6 +81,22 @@ class TestIngestionClassCode(unittest.TestCase):
 
         rows = db.recent_posts(self.db_path)
         self.assertIsNone(rows[0]["class_code"])
+
+    def test_same_room_number_different_cohort_gets_distinct_class_code(self):
+        # Bug thật: Khoá 3 và Khoá 4 đều có phòng "Lab-D305" riêng (server thật quan sát được) — nếu
+        # không tách theo category cha (khoá), escalation của 2 khoá sẽ gộp nhầm vào 1 mã lớp.
+        msg_k3 = _make_thread_message(
+            thread_name="Lab-D305", parent_name="thực-hành-lab", category_name="LỚP HỌC - KHOÁ 3"
+        )
+        msg_k4 = _make_thread_message(
+            thread_name="Lab-D305", parent_name="thực-hành-lab", category_name="LỚP HỌC - KHOÁ 4"
+        )
+        self.cog._store(msg_k3, channel_name="thực-hành-lab", group="chat_lop")
+        self.cog._store(msg_k4, channel_name="thực-hành-lab", group="chat_lop")
+
+        rows = {r["message_id"]: r["class_code"] for r in db.recent_posts(self.db_path)}
+        self.assertEqual(rows[str(msg_k3.channel.id)], "K3-Lab-D305")
+        self.assertEqual(rows[str(msg_k4.channel.id)], "K4-Lab-D305")
 
 
 if __name__ == "__main__":

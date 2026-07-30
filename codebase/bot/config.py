@@ -4,6 +4,7 @@ trong 02-guide.md §3.4: không commit API key/.env)."""
 from __future__ import annotations
 
 import os
+import re
 import unicodedata
 from pathlib import Path
 
@@ -77,12 +78,31 @@ def classify_channel(channel_name: str) -> str | None:
     return None
 
 
-def class_code_for_channel(channel_name: str) -> str | None:
-    """Suy ra mã lớp (vd 'Lab-D305') từ tên phòng lớp cụ thể; None cho kênh chung (vd ly-thuyet-chung)."""
+def cohort_from_category(category_name: str | None) -> str | None:
+    """Suy ra mã khoá ('K3', 'K4'...) từ tên category cha (vd 'LỚP HỌC - KHOÁ 3').
+
+    Server thật dùng CHUNG số phòng giữa các khoá (vd cả Khoá 3 và Khoá 4 đều có phòng 'Lab-D305' —
+    2 thread khác nhau, cùng tên) — không tách theo khoá thì escalation của 2 khoá sẽ bị gộp nhầm
+    vào một mã lớp khi route cho TA qua /ta-digest.
+    """
+    if not category_name:
+        return None
+    match = re.search(r"khoa(\d+)", _normalize(category_name))
+    return f"K{match.group(1)}" if match else None
+
+
+def class_code_for_channel(channel_name: str, cohort: str | None = None) -> str | None:
+    """Suy ra mã lớp (vd 'K3-Lab-D305') từ tên phòng lớp cụ thể + khoá (nếu xác định được);
+    None cho kênh chung (vd ly-thuyet-chung).
+
+    `cohort` nên là kết quả của `cohort_from_category()` trên category chứa forum lý-thuyết/thực-hành-lab —
+    xem lý do tách khoá ở docstring của hàm đó. Không có cohort thì trả về mã lớp trần (không tiền tố).
+    """
     name_norm = _normalize(channel_name)
     prefix = _class_room_prefix(name_norm)
     if not prefix:
         return None
     label = "Lab" if prefix == "lab-" else "Lec"
     room = name_norm[len(prefix):].upper()
-    return f"{label}-{room}"
+    code = f"{label}-{room}"
+    return f"{cohort}-{code}" if cohort else code

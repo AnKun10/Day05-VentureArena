@@ -4,21 +4,25 @@
 #
 # `class` phải khớp đúng chuỗi mà config.class_code_for_channel() trả ra từ tên THREAD phòng lớp
 # (không phải tên forum cha "lý-thuyết"/"thực-hành-lab") — xem ingestion/listener.py.
-# Mã phòng dưới đây lấy từ tên thread quan sát thật trên server BTC (Cohort 3 & 4).
+#
+# QUAN TRỌNG: Khoá 3 và Khoá 4 dùng CHUNG số phòng (server thật có "Lab-D305" ở CẢ HAI khoá — 2 thread
+# khác nhau, cùng tên) nên mã lớp có tiền tố khoá "K3-"/"K4-" (suy từ category cha "LỚP HỌC - KHOÁ x") —
+# nếu để trần "Lab-D305" thì escalation của 2 khoá sẽ gộp nhầm vào cùng một TA. Nếu thực tế cùng 1 TA phụ
+# trách phòng đó ở cả 2 khoá thì cứ khai 2 dòng, cùng discord_id là được.
 
-- class: "Lab-D305"
+- class: "K3-Lab-D305"
   ta_name: "M.A"
   discord_id: ""
-- class: "Lab-D303"
+- class: "K4-Lab-D305"
+  ta_name: ""
+  discord_id: ""
+- class: "K3-Lab-D303"
   ta_name: "H.T"
   discord_id: ""
-- class: "Lab-E403"
+- class: "K3-Lec-D302"
   ta_name: ""
   discord_id: ""
-- class: "Lec-D302"
-  ta_name: ""
-  discord_id: ""
-- class: "Lec-C401"
+- class: "K4-Lec-D302"
   ta_name: ""
   discord_id: ""
 - class: "Lý thuyết chung"
