@@ -31,7 +31,7 @@
 - Test: `codebase/backend/tests/test_config.py`
 
 **Interfaces:**
-- Produces: `Config` dataclass với fields `db_path: str`, `enrich_model: str`, `openai_api_key: str`, `tavily_api_key: str`, `discord_token: str`, `channel_ids: dict[str, str]` (keys: `chia-se`, `bai-hoc`, `tai-nguyen`); classmethod `Config.from_env() -> Config`.
+- Produces: `Config` dataclass với fields `db_path: str`, `enrich_model: str`, `openai_api_key: str`, `tavily_api_key: str`, `discord_token: str`, `guild_id: str` (env `DISCORD_GUILD_ID`), `channel_ids: dict[str, str]` (keys: `chia-se`, `bai-hoc`, `tai-nguyen` — override tuỳ chọn); classmethod `Config.from_env() -> Config`.
 
 - [ ] **Step 1: Tạo venv + requirements**
 
@@ -82,10 +82,12 @@ def test_from_env_reads_values(monkeypatch):
     monkeypatch.setenv("COMPANION_DB", "x.db")
     monkeypatch.setenv("ENRICH_MODEL", "gpt-5")
     monkeypatch.setenv("DISCORD_CHANNEL_CHIA_SE", "111")
+    monkeypatch.setenv("DISCORD_GUILD_ID", "999")
     cfg = Config.from_env()
     assert cfg.db_path == "x.db"
     assert cfg.enrich_model == "gpt-5"
     assert cfg.channel_ids["chia-se"] == "111"
+    assert cfg.guild_id == "999"
 ```
 
 - [ ] **Step 3: Chạy test, xác nhận FAIL** — `pytest tests/test_config.py -v` → `ModuleNotFoundError` hoặc `ImportError`.
@@ -108,6 +110,7 @@ class Config:
     openai_api_key: str = ""
     tavily_api_key: str = ""
     discord_token: str = ""
+    guild_id: str = ""
     channel_ids: dict = field(default_factory=dict)
 
     @classmethod
@@ -118,6 +121,7 @@ class Config:
             openai_api_key=os.getenv("OPENAI_API_KEY", ""),
             tavily_api_key=os.getenv("TAVILY_API_KEY", ""),
             discord_token=os.getenv("DISCORD_TOKEN", ""),
+            guild_id=os.getenv("DISCORD_GUILD_ID", ""),
             channel_ids={
                 "chia-se": os.getenv("DISCORD_CHANNEL_CHIA_SE", ""),
                 "bai-hoc": os.getenv("DISCORD_CHANNEL_BAI_HOC", ""),
@@ -963,7 +967,7 @@ def main():
         source = SeedSource(args.seed)
     else:
         from .sources import DiscordSource  # Task 8
-        source = DiscordSource(cfg.discord_token, cfg.channel_ids)
+        source = DiscordSource(cfg.discord_token, cfg.channel_ids, cfg.guild_id)
 
     while True:
         stats = run_once(store, source, cfg, limit=args.limit, force=args.force)
@@ -991,12 +995,25 @@ if __name__ == "__main__":
 - Test: `codebase/backend/tests/test_sources_discord.py` (chỉ test mapping — không gọi Discord thật)
 
 **Interfaces:**
-- Produces: `map_role(role_names: list[str]) -> str` ("Lab Coach"|"BTC"|"Mentor"|"Học viên"); `thread_to_rawpost(thread_id, channel_key, title, starter_content, author_name, role_names, jump_url, created_at_iso, hearts, comment_tuples) -> RawPost` với `comment_tuples: list[tuple[id, author, role_names, content, created_at_iso]]`; `DiscordSource(token, channel_ids).fetch(since)` dùng discord.py.
+- Produces: `map_role(role_names: list[str]) -> str` ("Lab Coach"|"BTC"|"Mentor"|"Học viên"); `normalize_channel_name(name: str) -> str` (bỏ emoji + dấu tiếng Việt, lowercase); `resolve_forum_channels(channels: list[tuple[int, str]]) -> dict[str, str]` (map `chia-se`/`bai-hoc`/`tai-nguyen` → channel id từ tên); `thread_to_rawpost(thread_id, channel_key, title, starter_content, author_name, role_names, jump_url, created_at_iso, hearts, comment_tuples) -> RawPost` với `comment_tuples: list[tuple[id, author, role_names, content, created_at_iso]]`; `DiscordSource(token, channel_ids, guild_id="").fetch(since)` — nếu `channel_ids` rỗng và có `guild_id` thì tự resolve kênh theo tên khi fetch.
 
 - [ ] **Step 1: Failing test** — `tests/test_sources_discord.py`:
 
 ```python
-from ingest.sources import map_role, thread_to_rawpost
+from ingest.sources import map_role, normalize_channel_name, resolve_forum_channels, thread_to_rawpost
+
+
+def test_normalize_channel_name():
+    assert normalize_channel_name("📖-bài-học") == "-bai-hoc"
+    assert normalize_channel_name("🎨︱chia-sẻ") == "chia-se"
+    assert normalize_channel_name("tài-nguyên") == "tai-nguyen"
+
+
+def test_resolve_forum_channels_by_name():
+    channels = [(1, "🙋-hỏi-đáp"), (2, "📖-bài-học"), (3, "🎨︱chia-sẻ"),
+                (4, "🗂-tài-nguyên"), (5, "general")]
+    assert resolve_forum_channels(channels) == {
+        "bai-hoc": "2", "chia-se": "3", "tai-nguyen": "4"}
 
 
 def test_map_role():
@@ -1025,6 +1042,27 @@ def test_thread_to_rawpost_maps_fields():
 - [ ] **Step 3: Implement — thêm vào `ingest/sources.py`**
 
 ```python
+import unicodedata
+
+_WANTED_CHANNELS = ("chia-se", "bai-hoc", "tai-nguyen")
+
+
+def normalize_channel_name(name: str) -> str:
+    s = unicodedata.normalize("NFD", name.lower()).replace("đ", "d")
+    s = "".join(ch for ch in s if unicodedata.category(ch) != "Mn")
+    return "".join(ch for ch in s if ch.isalnum() or ch == "-")
+
+
+def resolve_forum_channels(channels: list[tuple[int, str]]) -> dict[str, str]:
+    out: dict[str, str] = {}
+    for cid, name in channels:
+        norm = normalize_channel_name(name)
+        for key in _WANTED_CHANNELS:
+            if key in norm and key not in out:
+                out[key] = str(cid)
+    return out
+
+
 def map_role(role_names: list[str]) -> str:
     joined = " ".join(role_names).lower()
     if "coach" in joined:
@@ -1053,11 +1091,13 @@ def thread_to_rawpost(thread_id, channel_key, title, starter_content, author_nam
 
 class DiscordSource:
     """Đọc forum channels qua discord.py: connect ngắn, fetch, rồi thoát.
+    channel_ids rỗng + có guild_id → tự resolve 3 kênh theo tên.
     Cần bật MESSAGE CONTENT INTENT trong Discord Developer Portal."""
 
-    def __init__(self, token: str, channel_ids: dict[str, str]):
+    def __init__(self, token: str, channel_ids: dict[str, str], guild_id: str = ""):
         self.token = token
         self.channel_ids = {k: v for k, v in channel_ids.items() if v}
+        self.guild_id = guild_id
 
     def fetch(self, since: dict[str, int]) -> list[RawPost]:
         import asyncio
@@ -1071,7 +1111,16 @@ class DiscordSource:
         @client.event
         async def on_ready():
             try:
-                for key, cid in self.channel_ids.items():
+                channel_ids = dict(self.channel_ids)
+                if not channel_ids and self.guild_id:
+                    guild = client.get_guild(int(self.guild_id)) or \
+                        await client.fetch_guild(int(self.guild_id))
+                    all_channels = await guild.fetch_channels()
+                    forums = [(c.id, c.name) for c in all_channels
+                              if isinstance(c, discord.ForumChannel)]
+                    channel_ids = resolve_forum_channels(forums)
+                    print(f"[discord] resolved channels: {channel_ids}")
+                for key, cid in channel_ids.items():
                     channel = client.get_channel(int(cid)) or \
                         await client.fetch_channel(int(cid))
                     threads = list(channel.threads)
@@ -1105,7 +1154,7 @@ class DiscordSource:
 ```
 
 - [ ] **Step 4: `pytest tests/test_sources_discord.py -v` → PASS** (mapping tests; `fetch` không chạy trong CI).
-- [ ] **Step 5: Manual verify (khi có server test + token):** điền `.env` → `python -m ingest --source discord --db demo.db --limit 3` → mở DB xem 3 bài có summary/tags. Ghi kết quả (số bài, 1 ví dụ tags) vào PR description. Chưa có server test thì đánh dấu bước này pending — không chặn các task sau.
+- [ ] **Step 5: Manual verify (khi có server test + token):** điền `DISCORD_TOKEN` + `DISCORD_GUILD_ID` vào `.env` (không cần channel ID) → `python -m ingest --source discord --db demo.db --limit 3` — log phải in `[discord] resolved channels: {...}` đủ 3 kênh → mở DB xem 3 bài có summary/tags. Ghi kết quả (số bài, 1 ví dụ tags) vào PR description. Chưa có server test thì đánh dấu bước này pending — không chặn các task sau.
 - [ ] **Step 6: Commit** — `git commit -m "feat(ingest): discord forum source with role mapping"`.
 
 ---
