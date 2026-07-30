@@ -98,7 +98,7 @@ Bookmark hiện là state phía client (chưa có user identity) — ngoài ph�
 - **Tavily lỗi / không có ảnh đạt điều kiện** → `image_url = null`, `image_source = 'placeholder'`; UI render SVG placeholder theo màu tag đầu (đã có sẵn). Không fail bài.
 - **Enrich lỗi** (sau 2 retry của SDK): giữ raw post, `tags=["other"]`, `summary` = 2 câu đầu của content (truncate 200 ký tự), tăng `enrich_failed += 1` — bài có `enrich_failed < 3` được tự thử lại ở lượt sau; đạt 3 thì giữ nguyên fallback vĩnh viễn (trừ khi `--force`).
 - Xử lý tuần tự, `--limit` mặc định 20 bài/lượt (chặn chi phí bất ngờ khi backfill).
-- Secrets: `OPENAI_API_KEY`, `TAVILY_API_KEY`, `DISCORD_TOKEN` qua `.env` (gitignore).
+- Secrets: `OPENAI_API_KEY`, `TAVILY_API_KEY`, `DISCORD_TOKEN` + ID 3 kênh nguồn qua `.env` (gitignore); template commit sẵn tại `codebase/backend/.env.example`.
 - Data khoá: DB và seed không chứa data thật ngoài quan sát đã ẩn danh; `companion.db` không commit.
 
 ## 8. Kiểm thử
