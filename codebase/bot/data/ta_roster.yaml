@@ -1,12 +1,25 @@
 # PLACEHOLDER — owner chính thức là Bình (codebase/data/ta_roster.yaml theo MASTERPLAN.md §6/§8).
 # Map lớp/lab phụ trách -> tài khoản Discord TA nhận bản tổng hợp qua /ta-digest.
 # discord_id để trống ("") nghĩa là chưa gán — dùng server test thì điền id member giả lập.
+#
+# `class` phải khớp đúng chuỗi mà config.class_code_for_channel() trả ra từ tên THREAD phòng lớp
+# (không phải tên forum cha "lý-thuyết"/"thực-hành-lab") — xem ingestion/listener.py.
+# Mã phòng dưới đây lấy từ tên thread quan sát thật trên server BTC (Cohort 3 & 4).
 
 - class: "Lab-D305"
   ta_name: "M.A"
   discord_id: ""
-- class: "Lab-D302"
+- class: "Lab-D303"
   ta_name: "H.T"
+  discord_id: ""
+- class: "Lab-E403"
+  ta_name: ""
+  discord_id: ""
+- class: "Lec-D302"
+  ta_name: ""
+  discord_id: ""
+- class: "Lec-C401"
+  ta_name: ""
   discord_id: ""
 - class: "Lý thuyết chung"
   ta_name: "T088"

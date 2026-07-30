@@ -1,10 +1,14 @@
 """Ingestion Worker (MASTERPLAN.md §3) — đọc 4 nhóm kênh, lưu metadata vào SQLite.
 
 Chạy như một Cog lắng nghe `on_message` (near-realtime) — đủ cho hackathon, không cần job định kỳ riêng.
-Với forum (`hỏi-đáp`, `bài-học`, `chia-sẻ`), discord.py phát `on_message` cho message ĐẦU của mỗi thread
-forum lẫn các reply sau đó; ta chỉ lưu 1 row/thread (dùng thread.id làm message_id) và cập nhật
-reaction/comment count mỗi khi có message mới trong thread đó — khớp cách #hỏi-đáp/#bài-học vận hành thật
-(1 post = 1 thread, nhiều comment).
+
+**Cấu trúc thật trên server BTC (quan trọng, khác giả định ban đầu):** `lý-thuyết` VÀ `thực-hành-lab`
+CŨNG là kênh Forum, không phải kênh chat thường — mỗi phòng lớp (`Lab-D305`, `Lec-D302`...) là 1 THREAD
+riêng bên trong forum đó, y hệt cách `hỏi-đáp`/`chia-sẻ`/`bài-học` vận hành (1 post = 1 thread, nhiều
+comment). Vì vậy mã lớp (`class_code`) phải soi trên TÊN THREAD, không phải tên forum cha — xem
+`_store()` (`leaf_name`) và test tái hiện bug này ở `tests/test_ingestion.py`.
+Ta chỉ lưu 1 row/thread (dùng thread.id làm message_id) và cập nhật reaction/comment count mỗi khi có
+message mới trong thread đó.
 
 **Chưa làm ở bản này** (khai rõ, không phải quyết định trung tâm nên để sau taxonomy chốt — MASTERPLAN.md §3):
   - Phân loại tin theo taxonomy (category) — An đang thiết kế; cột `category` để NULL, agent phân loại
@@ -65,7 +69,13 @@ class IngestionCog(commands.Cog):
         comments = self._thread_message_count(message.channel) - 1 if is_thread else 0
 
         session_code = best_session_code(message.content) if group == "tai_nguyen" else None
-        class_code = config.class_code_for_channel(channel_name)
+
+        # Mã lớp: trên server thật, `lý-thuyết`/`thực-hành-lab` là kênh FORUM — mỗi PHÒNG (vd "Lab-D305",
+        # "Lec-D302") là 1 THREAD riêng, đặt tên theo phòng. `channel_name` ở trên đã bị resolve về tên
+        # kênh CHA (dùng để phân loại nhóm) nên phải soi mã lớp trên tên THREAD, không phải tên cha —
+        # nếu soi nhầm trên tên cha thì mọi bài trong lý-thuyết/thực-hành-lab đều ra class_code=None.
+        leaf_name = message.channel.name if is_thread else channel_name
+        class_code = config.class_code_for_channel(leaf_name)
 
         db.upsert_post(
             self.db_path,
