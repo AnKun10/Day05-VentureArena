@@ -1,3 +1,77 @@
+# Discord Web Collector
+
+Small, read-only collector for an administrator-authorized Discord dataset. It connects to an already-running Microsoft Edge session through CDP; it never starts a new browser profile, uses tokens or undocumented APIs, sends Discord actions, downloads attachments, or discovers channels beyond the URLs in `config.yaml`.
+
+## Discord Developer Portal legal pages
+
+This repository includes static Terms of Service and Privacy Policy pages in `docs/` for the Companion Discord Bot. To publish them with GitHub Pages:
+
+```text
+GitHub repository
+→ Settings
+→ Pages
+→ Deploy from a branch
+→ Branch: main
+→ Folder: /docs
+→ Save
+```
+
+After GitHub Pages finishes deploying, paste these URLs into the Discord Developer Portal:
+
+```text
+General Information
+→ Terms of Service URL: https://AnKun10.github.io/Day05-VentureArena/terms.html
+→ Privacy Policy URL: https://AnKun10.github.io/Day05-VentureArena/privacy.html
+```
+
+Before publishing, replace the clearly marked placeholders in the legal pages with the public Discord application name, a contact email address, and the approved data-retention period.
+
+## Windows setup
+
+Requires Python 3.11+ and Microsoft Edge. In PowerShell:
+
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+Copy-Item config.example.yaml config.yaml
+```
+
+Replace every `PASTE_CHANNEL_URL` in `config.yaml` with a copied Discord channel URL. Only `https://discord.com/channels/SERVER_ID/CHANNEL_ID` is accepted. Use the exact configured General, Questions, Sharing, Lessons, Announcements, and Resources channels; no channel discovery occurs.
+
+Start a dedicated Edge profile and log in yourself:
+
+```powershell
+.\start_edge.ps1
+```
+
+The script opens Edge with `--remote-debugging-port=9222` and an `edge-profile` folder beside the script. In that Edge window, visit Discord and manually complete login. Do not share credentials, OTPs, cookies, or tokens with this tool.
+
+Validate, then collect:
+
+```powershell
+python -m discord_collector validate --config config.yaml
+python -m discord_collector collect --config config.yaml
+```
+
+Press `Ctrl+C` to interrupt. JSON files and `data/discord_crawl/checkpoint.json` are written atomically after every extracted batch, so rerun the same `collect` command to resume without duplicate `(channel_id, message_id)` records.
+
+## Output
+
+`general.json`, `announcements.json`, and `resources.json` are written under `data/discord_crawl/`. Forum threads are written under `data/discord_crawl/questions/`, `data/discord_crawl/sharing/`, and `data/discord_crawl/lessons/`, one file per visible post. Each record contains available IDs, author, timestamp, text, reply reference, attachment metadata, edited flag, and collection time; unavailable optional fields are `null`.
+
+## Limits and safe stops
+
+The Selenium collector attaches only to the existing Edge session and scrolls the Discord UI. It stops when the requested latest-message limit is reached, history no longer loads, login/access expires, or a login/security/CAPTCHA prompt appears. It preserves progress in all of those cases. Discord changes its DOM regularly; selectors are intentionally centralized in `src/discord_collector/selectors.py` for an operator to maintain. Forum “latest” selection relies on visible post timestamps, so hidden/unloaded posts are not inferred.
+
+Run local tests (they do not connect to Discord):
+
+```powershell
+pytest -q
+```
+
+---
+
 # Mini Hackathon AI — Batch 03
 
 **SPEC → Prototype → Demo.** Đây không phải cuộc thi code — đây là cuộc thi **tư duy sản phẩm AI**.

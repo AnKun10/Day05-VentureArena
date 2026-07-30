@@ -10,3 +10,11 @@ dist/
 __pycache__/
 codebase/backend/eval/traces/
 qdrant_data/
+.pytest_cache/
+playwright-report/
+config.yaml
+output/
+data/discord_crawl/
+edge-profile*/
+*.cookie
+*.egg-info/
