@@ -10,11 +10,11 @@
 
 // ---------- Loại buổi học ----------
 export const SESSION_TYPES = {
-  LT: { label: "Lý thuyết", color: "#3b82f6" },
-  LAB: { label: "Thực hành Lab", color: "#22c55e" },
-  WS: { label: "Workshop", color: "#a855f7" },
-  OH: { label: "Office hour", color: "#f59e0b" },
-  MD: { label: "Mentor duty", color: "#ec4899" },
+  LT: { label: "Lý thuyết", color: "#60a5fa" },
+  LAB: { label: "Thực hành Lab", color: "#4ade80" },
+  WS: { label: "Workshop", color: "#c084fc" },
+  OH: { label: "Office hour", color: "#fbbf24" },
+  MD: { label: "Mentor duty", color: "#f472b6" },
 };
 
 // FAQ chung theo LOẠI buổi (từ file faq/*.md trong thiết kế)
@@ -106,10 +106,10 @@ export const SESSIONS = RAW_SESSIONS.map((s) => {
 
 // ---------- Tài nguyên (kênh #tài-nguyên → Session Linker gắn mã buổi) ----------
 export const RESOURCE_KINDS = {
-  slide: { label: "Slide", icon: "📑" },
-  record: { label: "Record", icon: "🎥" },
-  doc: { label: "Tài liệu", icon: "📄" },
-  link: { label: "Link khác", icon: "🔗" },
+  slide: { label: "Slide" },
+  record: { label: "Record" },
+  doc: { label: "Tài liệu" },
+  link: { label: "Link khác" },
 };
 
 export const RESOURCES = [
@@ -127,11 +127,11 @@ export const RESOURCES = [
 // ---------- News (digest cộng đồng) ----------
 // ⚠️ PLACEHOLDER taxonomy — bộ loại tin chính thức do nhóm thiết kế sau.
 export const NEWS_CATEGORIES = [
-  { id: "announce", label: "Thông báo", color: "#ef4444" },
-  { id: "survey", label: "Khảo sát / Form", color: "#f59e0b" },
-  { id: "qa", label: "Hỏi đáp", color: "#3b82f6" },
-  { id: "share", label: "Chia sẻ kiến thức", color: "#22c55e" },
-  { id: "resource", label: "Tài liệu", color: "#a855f7" },
+  { id: "announce", label: "Thông báo", color: "#f87171" },
+  { id: "survey", label: "Khảo sát / Form", color: "#fbbf24" },
+  { id: "qa", label: "Hỏi đáp", color: "#60a5fa" },
+  { id: "share", label: "Chia sẻ kiến thức", color: "#4ade80" },
+  { id: "resource", label: "Tài liệu", color: "#c084fc" },
 ];
 
 export const NEWS = [

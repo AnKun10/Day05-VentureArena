@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight, MapPin, Video } from "lucide-react";
 import {
   SESSIONS,
   SESSION_TYPES,
@@ -7,6 +8,8 @@ import {
   fmtDM,
   isSameDay,
 } from "../data/mock.js";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import SessionModal from "../components/SessionModal.jsx";
 
 const START_H = 8;
@@ -36,58 +39,49 @@ export default function CalendarPage() {
     if (scrollRef.current) scrollRef.current.scrollTop = (17 - START_H) * HPX - 40;
   }, []);
 
-  const nowTop =
-    (today.getHours() + today.getMinutes() / 60 - START_H) * HPX;
+  const nowTop = (today.getHours() + today.getMinutes() / 60 - START_H) * HPX;
 
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="flex flex-wrap items-center gap-4 border-b border-[#232838] px-6 py-4">
-        <div>
-          <h1 className="text-lg font-bold text-white">Lịch học</h1>
-          <p className="text-xs text-zinc-500">
-            Tuần {fmtDM(days[0])} – {fmtDM(days[6])} · bấm vào block để xem chi tiết buổi học
+      <div className="flex flex-wrap items-center gap-4 border-b px-6 py-4">
+        <div className="mr-2">
+          <h1 className="font-heading text-lg font-semibold">Lịch học</h1>
+          <p className="text-xs text-muted-foreground">
+            Tuần {fmtDM(days[0])} – {fmtDM(days[6])} · bấm vào block để xem chi tiết
           </p>
         </div>
 
-        <div className="flex items-center gap-1 rounded-lg border border-[#232838] bg-[#171a24] p-1">
-          <button
-            onClick={() => setWeekOffset((w) => w - 1)}
-            className="rounded-md px-2.5 py-1 text-sm text-zinc-400 hover:bg-white/5 hover:text-white"
+        <div className="flex items-center gap-1">
+          <Button
+            variant="outline"
+            size="icon-sm"
             aria-label="Tuần trước"
+            onClick={() => setWeekOffset((w) => w - 1)}
           >
-            ‹
-          </button>
-          <button
+            <ChevronLeft />
+          </Button>
+          <Button
+            variant={weekOffset === 0 ? "secondary" : "outline"}
+            size="sm"
             onClick={() => setWeekOffset(0)}
-            className={
-              "rounded-md px-3 py-1 text-xs font-semibold " +
-              (weekOffset === 0
-                ? "bg-[#5865f2]/20 text-[#aab4ff]"
-                : "text-zinc-400 hover:bg-white/5 hover:text-white")
-            }
           >
             Tuần này
-          </button>
-          <button
-            onClick={() => setWeekOffset((w) => w + 1)}
-            className="rounded-md px-2.5 py-1 text-sm text-zinc-400 hover:bg-white/5 hover:text-white"
+          </Button>
+          <Button
+            variant="outline"
+            size="icon-sm"
             aria-label="Tuần sau"
+            onClick={() => setWeekOffset((w) => w + 1)}
           >
-            ›
-          </button>
+            <ChevronRight />
+          </Button>
         </div>
 
-        <div className="ml-auto flex flex-wrap items-center gap-2">
+        <div className="ml-auto flex flex-wrap items-center gap-x-3.5 gap-y-1.5">
           {Object.entries(SESSION_TYPES).map(([k, t]) => (
-            <span
-              key={k}
-              className="flex items-center gap-1.5 rounded-full border border-[#232838] bg-[#171a24] px-2.5 py-1 text-[11px] text-zinc-400"
-            >
-              <span
-                className="h-2 w-2 rounded-full"
-                style={{ background: t.color }}
-              />
+            <span key={k} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span className="size-2 rounded-full" style={{ background: t.color }} />
               {t.label}
             </span>
           ))}
@@ -95,20 +89,25 @@ export default function CalendarPage() {
       </div>
 
       {/* Day headers */}
-      <div className="grid shrink-0 grid-cols-[56px_repeat(7,1fr)] border-b border-[#232838] bg-[#12141c] pr-2">
+      <div className="grid shrink-0 grid-cols-[56px_repeat(7,1fr)] border-b bg-sidebar pr-2">
         <div />
         {days.map((d, i) => {
           const isToday = isSameDay(d, today);
           return (
-            <div key={i} className="flex items-center justify-center gap-2 border-l border-[#232838] py-2.5">
-              <span className={"text-[11px] font-medium " + (isToday ? "text-[#aab4ff]" : "text-zinc-500")}>
+            <div key={i} className="flex items-center justify-center gap-2 border-l py-2.5">
+              <span
+                className={cn(
+                  "text-[11px] font-medium",
+                  isToday ? "text-primary" : "text-muted-foreground"
+                )}
+              >
                 {DAY_LABELS[i]}
               </span>
               <span
-                className={
-                  "flex h-6 w-6 items-center justify-center rounded-full text-[12px] font-bold " +
-                  (isToday ? "bg-[#5865f2] text-white" : "text-zinc-300")
-                }
+                className={cn(
+                  "flex size-6 items-center justify-center rounded-full font-mono text-xs font-medium",
+                  isToday ? "bg-primary text-primary-foreground" : "text-foreground"
+                )}
               >
                 {d.getDate()}
               </span>
@@ -125,7 +124,7 @@ export default function CalendarPage() {
             {Array.from({ length: END_H - START_H }, (_, i) => (
               <div
                 key={i}
-                className="absolute right-2 -translate-y-1/2 text-[10px] text-zinc-600"
+                className="absolute right-2.5 -translate-y-1/2 font-mono text-[10px] text-muted-foreground/70"
                 style={{ top: (i + 1) * HPX }}
               >
                 {String(START_H + i + 1).padStart(2, "0")}:00
@@ -138,20 +137,20 @@ export default function CalendarPage() {
             return (
               <div
                 key={di}
-                className={"relative border-l border-[#232838] " + (isToday ? "bg-[#5865f2]/[0.04]" : "")}
+                className={cn("relative border-l", isToday && "bg-primary/[0.04]")}
                 style={{
                   height: (END_H - START_H) * HPX,
                   backgroundImage:
-                    "repeating-linear-gradient(to bottom, #1d212e 0, #1d212e 1px, transparent 1px, transparent " +
+                    "repeating-linear-gradient(to bottom, color-mix(in oklch, var(--foreground) 7%, transparent) 0, color-mix(in oklch, var(--foreground) 7%, transparent) 1px, transparent 1px, transparent " +
                     HPX +
                     "px)",
                 }}
               >
                 {/* now line */}
                 {isToday && nowTop > 0 && nowTop < (END_H - START_H) * HPX && (
-                  <div className="absolute left-0 right-0 z-10" style={{ top: nowTop }}>
-                    <div className="h-px bg-red-500/80" />
-                    <div className="-mt-[3px] ml-0 h-1.5 w-1.5 rounded-full bg-red-500" />
+                  <div className="absolute right-0 left-0 z-10" style={{ top: nowTop }}>
+                    <div className="h-px bg-destructive" />
+                    <div className="-mt-[3px] size-1.5 rounded-full bg-destructive" />
                   </div>
                 )}
 
@@ -163,23 +162,28 @@ export default function CalendarPage() {
                     <button
                       key={s.code}
                       onClick={() => setSelected(s)}
-                      className="absolute left-1 right-1.5 overflow-hidden rounded-md px-2 py-1 text-left transition-transform hover:scale-[1.02] hover:brightness-110"
+                      className="absolute right-1.5 left-1 overflow-hidden rounded-md px-2 py-1 text-left transition-all outline-none hover:ring-1 hover:ring-foreground/20 focus-visible:ring-2 focus-visible:ring-ring"
                       style={{
                         top,
                         height,
-                        background: t.color + "26",
-                        borderLeft: `3px solid ${t.color}`,
+                        background: t.color + "1c",
+                        borderLeft: `2px solid ${t.color}`,
                       }}
                     >
-                      <div className="text-[10px] font-bold" style={{ color: t.color }}>
+                      <div className="font-mono text-[10px] font-medium" style={{ color: t.color }}>
                         {s.code} · {s.timeLabel.split(" – ")[0]}
                       </div>
-                      <div className="mt-0.5 line-clamp-2 text-[11px] font-medium leading-tight text-zinc-200">
+                      <div className="mt-0.5 line-clamp-2 text-[11px] leading-tight font-medium text-foreground/90">
                         {s.title}
                       </div>
                       {height > 70 && (
-                        <div className="mt-0.5 truncate text-[10px] text-zinc-500">
-                          {s.format === "Offline" ? `📍 ${s.location}` : "💻 " + s.format}
+                        <div className="mt-1 flex items-center gap-1 truncate text-[10px] text-muted-foreground">
+                          {s.format === "Offline" ? (
+                            <MapPin className="size-2.5 shrink-0" />
+                          ) : (
+                            <Video className="size-2.5 shrink-0" />
+                          )}
+                          {s.format === "Offline" ? s.location : s.format}
                         </div>
                       )}
                     </button>

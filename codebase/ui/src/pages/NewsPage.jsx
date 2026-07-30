@@ -1,5 +1,10 @@
 import { useMemo, useState } from "react";
+import { ArrowUpRight, Clock3, Flame, Heart, Inbox, MessageSquare } from "lucide-react";
 import { NEWS, NEWS_CATEGORIES, isHot } from "../data/mock.js";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 const catOf = (id) => NEWS_CATEGORIES.find((c) => c.id === id);
 
@@ -7,7 +12,11 @@ export default function NewsPage() {
   const [cat, setCat] = useState("all");
 
   const hot = useMemo(
-    () => [...NEWS].filter(isHot).sort((a, b) => b.hearts + b.comments - (a.hearts + a.comments)).slice(0, 4),
+    () =>
+      [...NEWS]
+        .filter(isHot)
+        .sort((a, b) => b.hearts + b.comments - (a.hearts + a.comments))
+        .slice(0, 4),
     []
   );
   const feed = useMemo(() => NEWS.filter((n) => cat === "all" || n.cat === cat), [cat]);
@@ -15,42 +24,39 @@ export default function NewsPage() {
   return (
     <div className="mx-auto max-w-4xl px-6 py-6">
       <div className="mb-5">
-        <h1 className="text-lg font-bold text-white">Bản tin cộng đồng</h1>
-        <p className="text-xs text-zinc-500">
+        <h1 className="font-heading text-lg font-semibold">Bản tin cộng đồng</h1>
+        <p className="text-xs text-muted-foreground">
           Tổng hợp từ các kênh Discord của khoá, phân loại theo loại tin{" "}
-          <span className="text-zinc-600">(taxonomy demo — nhóm chốt bộ loại tin sau)</span>
+          <span className="text-muted-foreground/60">(taxonomy demo — nhóm chốt bộ loại tin sau)</span>
         </p>
       </div>
 
       {/* Hot trend */}
       <div className="mb-6">
-        <h2 className="mb-2.5 text-[11px] font-bold uppercase tracking-wider text-zinc-500">
-          🔥 Hot trend
+        <h2 className="mb-2.5 flex items-center gap-1.5 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+          <Flame className="size-3.5 text-orange-400" /> Hot trend
         </h2>
         <div className="grid gap-2.5 sm:grid-cols-2">
           {hot.map((n) => {
             const c = catOf(n.cat);
             return (
-              <a
+              <Card
                 key={n.id}
-                href={n.url}
-                onClick={(e) => e.preventDefault()}
-                className="group rounded-xl border border-[#232838] bg-gradient-to-br from-[#1a1d29] to-[#151823] p-3.5 transition-colors hover:border-[#3a4157]"
+                size="sm"
+                className="cursor-pointer gap-2 transition-colors hover:ring-foreground/20"
               >
-                <div className="mb-1.5 flex items-center gap-2">
+                <div className="flex items-center gap-2 px-3">
                   <CatBadge c={c} />
-                  <span className="text-[10px] text-zinc-600">{n.channel}</span>
-                  <span className="ml-auto text-[10px] font-bold text-orange-400">🔥</span>
+                  <span className="font-mono text-[10px] text-muted-foreground">{n.channel}</span>
+                  <Flame className="ml-auto size-3.5 text-orange-400" />
                 </div>
-                <div className="line-clamp-2 text-[13.5px] font-semibold leading-snug text-zinc-100 group-hover:text-white">
-                  {n.title}
-                </div>
-                <div className="mt-2 flex items-center gap-3 text-[11px] text-zinc-500">
-                  <span>❤️ {n.hearts}</span>
-                  <span>💬 {n.comments}</span>
+                <div className="line-clamp-2 px-3 text-sm leading-snug font-medium">{n.title}</div>
+                <div className="flex items-center gap-3 px-3 text-xs text-muted-foreground">
+                  <Meta icon={Heart} value={n.hearts} />
+                  <Meta icon={MessageSquare} value={n.comments} />
                   <span className="ml-auto">{n.time}</span>
                 </div>
-              </a>
+              </Card>
             );
           })}
         </div>
@@ -58,7 +64,7 @@ export default function NewsPage() {
 
       {/* Filter chips */}
       <div className="mb-4 flex flex-wrap gap-1.5">
-        <CatChip active={cat === "all"} onClick={() => setCat("all")} label="Tất cả" color="#71717a" />
+        <CatChip active={cat === "all"} onClick={() => setCat("all")} label="Tất cả" />
         {NEWS_CATEGORIES.map((c) => (
           <CatChip
             key={c.id}
@@ -75,88 +81,88 @@ export default function NewsPage() {
         {feed.map((n) => {
           const c = catOf(n.cat);
           return (
-            <div
-              key={n.id}
-              className="rounded-xl border border-[#232838] bg-[#151823] px-4 py-3.5 transition-colors hover:border-[#3a4157]"
-            >
-              <div className="mb-1 flex flex-wrap items-center gap-2">
+            <Card key={n.id} size="sm" className="gap-1.5 transition-colors hover:ring-foreground/20">
+              <div className="flex flex-wrap items-center gap-2 px-3">
                 <CatBadge c={c} />
                 {n.open && (
-                  <span className="rounded-md border border-blue-500/40 bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-blue-400">
-                    ⏳ Chờ TA trả lời
-                  </span>
+                  <Badge variant="outline" className="gap-1 text-sky-400">
+                    <Clock3 /> Chờ TA trả lời
+                  </Badge>
                 )}
-                {isHot(n) && <span className="text-[11px]">🔥</span>}
-                <span className="ml-auto text-[11px] text-zinc-600">{n.time}</span>
+                {isHot(n) && <Flame className="size-3.5 text-orange-400" />}
+                <span className="ml-auto text-xs text-muted-foreground">{n.time}</span>
               </div>
-              <div className="text-[14px] font-semibold text-zinc-100">{n.title}</div>
-              <p className="mt-1 line-clamp-2 text-[12.5px] leading-relaxed text-zinc-400">{n.summary}</p>
-              <div className="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-zinc-500">
-                <span className="font-medium text-zinc-400">{n.author}</span>
+              <div className="px-3 text-sm font-medium">{n.title}</div>
+              <p className="line-clamp-2 px-3 text-xs leading-relaxed text-muted-foreground">
+                {n.summary}
+              </p>
+              <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 px-3 text-xs text-muted-foreground">
+                <span className="font-medium text-foreground/80">{n.author}</span>
                 <RoleBadge role={n.role} />
-                <span className="text-zinc-700">•</span>
-                <span>{n.channel}</span>
-                <span className="text-zinc-700">•</span>
-                <span>❤️ {n.hearts}</span>
-                <span>💬 {n.comments}</span>
-                <a
-                  href={n.url}
+                <span className="text-muted-foreground/40">·</span>
+                <span className="font-mono">{n.channel}</span>
+                <span className="text-muted-foreground/40">·</span>
+                <Meta icon={Heart} value={n.hearts} />
+                <Meta icon={MessageSquare} value={n.comments} />
+                <Button
+                  variant="link"
+                  size="xs"
+                  className="ml-auto"
                   onClick={(e) => e.preventDefault()}
-                  className="ml-auto font-semibold text-[#8891f2] hover:text-[#aab4ff]"
                 >
-                  Mở trên Discord ↗
-                </a>
+                  Mở trên Discord <ArrowUpRight data-icon="inline-end" />
+                </Button>
               </div>
-            </div>
+            </Card>
           );
         })}
         {feed.length === 0 && (
-          <p className="py-10 text-center text-sm text-zinc-600">Chưa có tin thuộc loại này.</p>
+          <div className="flex flex-col items-center gap-2 py-16 text-muted-foreground">
+            <Inbox className="size-8" />
+            <p className="text-sm">Chưa có tin thuộc loại này.</p>
+          </div>
         )}
       </div>
     </div>
   );
 }
 
+function Meta({ icon: Icon, value }) {
+  return (
+    <span className="flex items-center gap-1">
+      <Icon className="size-3" />
+      <span className="font-mono">{value}</span>
+    </span>
+  );
+}
+
 function CatBadge({ c }) {
   return (
-    <span
-      className="rounded-md px-1.5 py-0.5 text-[10px] font-bold"
-      style={{ background: c.color + "22", color: c.color }}
-    >
+    <Badge className="font-medium" style={{ background: c.color + "22", color: c.color }}>
       {c.label}
-    </span>
+    </Badge>
   );
 }
 
 function RoleBadge({ role }) {
   const isStaff = role !== "Học viên";
   return (
-    <span
-      className={
-        "rounded px-1.5 py-0.5 text-[9.5px] font-semibold uppercase tracking-wide " +
-        (isStaff ? "bg-emerald-500/15 text-emerald-400" : "bg-zinc-700/40 text-zinc-400")
-      }
-    >
+    <Badge variant="outline" className={cn("text-[10px]", isStaff && "text-emerald-400")}>
       {role}
-    </span>
+    </Badge>
   );
 }
 
 function CatChip({ active, onClick, label, color }) {
   return (
-    <button
+    <Button
+      variant={active ? "secondary" : "outline"}
+      size="sm"
       onClick={onClick}
-      className={
-        "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors " +
-        (active
-          ? "border-transparent text-white"
-          : "border-[#232838] bg-[#171a24] text-zinc-400 hover:border-[#3a4157] hover:text-zinc-200")
-      }
-      style={active ? { background: color } : undefined}
+      className={cn(!active && "text-muted-foreground")}
     >
-      <span className="h-1.5 w-1.5 rounded-full" style={{ background: active ? "#fff" : color }} />
+      {color && <span className="size-2 rounded-full" style={{ background: color }} />}
       {label}
-    </button>
+    </Button>
   );
 }

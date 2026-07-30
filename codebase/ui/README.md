@@ -28,4 +28,9 @@ Tab **Hỏi đáp** (chat với agent) để chỗ sẵn trên sidebar — nối
 
 ## Stack
 
-React 18 + Vite 6 + Tailwind CSS 4 (plugin `@tailwindcss/vite`). Không router — chuyển trang bằng state trong `App.jsx`.
+React 19 + Vite 6 + Tailwind CSS 4 + **shadcn/ui** (Base UI primitives, style new-york, JS/JSX).
+
+- Design tokens trong `src/index.css` (`.dark` block) — dark-only, base zinc, 1 accent indigo (`--primary`); đổi màu thương hiệu chỉ cần sửa `--primary`/`--ring`.
+- Font: Geist Sans (UI) + Geist Mono (giờ, mã buổi, số liệu) — self-host qua fontsource.
+- Component gốc trong `src/components/ui/` (button, badge, card, dialog, accordion, input, separator) — thêm mới bằng `npx shadcn@latest add <component>`.
+- Icons: lucide-react. Không router — chuyển trang bằng state trong `App.jsx`.

@@ -8,7 +8,7 @@ export default function App() {
   const [page, setPage] = useState("calendar");
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#0e1015]">
+    <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar page={page} onNavigate={setPage} />
       <main className="min-w-0 flex-1 overflow-y-auto">
         {page === "calendar" && <CalendarPage />}

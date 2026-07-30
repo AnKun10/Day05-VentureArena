@@ -1,12 +1,30 @@
+import { Clapperboard, FileText, Presentation, Radio, Video } from "lucide-react";
 import { SESSION_TYPES, fmtDM } from "../data/mock.js";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 const DAY_FULL = ["Chủ nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
 
 const LINK_DEFS = [
-  { key: "zoom", label: "Tham gia Zoom", icon: "💻" },
-  { key: "slide", label: "Slide", icon: "📑" },
-  { key: "record", label: "Record", icon: "🎥" },
-  { key: "materials", label: "Tài liệu", icon: "📄" },
+  { key: "zoom", label: "Tham gia Zoom", icon: Video },
+  { key: "slide", label: "Slide", icon: Presentation },
+  { key: "record", label: "Record", icon: Clapperboard },
+  { key: "materials", label: "Tài liệu", icon: FileText },
 ];
 
 export default function SessionModal({ session: s, onClose }) {
@@ -15,131 +33,109 @@ export default function SessionModal({ session: s, onClose }) {
   const missing = LINK_DEFS.filter((l) => !s.links?.[l.key] && l.key !== "zoom");
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        className="max-h-[85vh] w-full max-w-[560px] overflow-y-auto rounded-2xl border border-[#2a3040] bg-[#151823] shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="p-5 pb-4" style={{ background: `linear-gradient(135deg, ${t.color}22, transparent 60%)` }}>
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <div className="mb-1.5 flex items-center gap-2">
-                <span
-                  className="rounded-md px-2 py-0.5 text-[11px] font-bold text-white"
-                  style={{ background: t.color }}
-                >
-                  {s.code}
-                </span>
-                <span className="text-[11px] font-medium" style={{ color: t.color }}>
-                  {t.label}
-                </span>
-              </div>
-              <h2 className="text-[17px] font-bold leading-snug text-white">{s.title}</h2>
-              <p className="mt-1 text-[12.5px] text-zinc-400">
-                🕐 {DAY_FULL[s.date.getDay()]}, {fmtDM(s.date)} · {s.timeLabel}
-              </p>
-            </div>
-            <button
-              onClick={onClose}
-              className="rounded-lg p-1.5 text-zinc-500 hover:bg-white/10 hover:text-white"
-              aria-label="Đóng"
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-[560px]">
+        <DialogHeader>
+          <div className="flex items-center gap-2">
+            <Badge
+              className="font-mono"
+              style={{ background: t.color + "24", color: t.color }}
             >
-              ✕
-            </button>
+              {s.code}
+            </Badge>
+            <span className="text-xs font-medium text-muted-foreground">{t.label}</span>
           </div>
+          <DialogTitle className="text-base leading-snug">{s.title}</DialogTitle>
+          <DialogDescription className="font-mono text-xs">
+            {DAY_FULL[s.date.getDay()]}, {fmtDM(s.date)} · {s.timeLabel}
+          </DialogDescription>
+        </DialogHeader>
+
+        {/* Info */}
+        <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-sm">
+          <InfoRow label="Hình thức" value={s.format === "Offline" ? "Offline" : "Online (Zoom)"} />
+          <InfoRow label="Địa điểm / Lớp" value={s.location ? `${s.location} · ${s.cls}` : s.cls} />
+          <InfoRow label="Phụ trách / Diễn giả" value={s.host} />
+          <InfoRow label="Mã buổi" value={s.code} mono />
         </div>
 
-        <div className="space-y-4 p-5 pt-1">
-          {/* Info grid */}
-          <div className="grid grid-cols-2 gap-2.5">
-            <Info label="Hình thức" value={s.format === "Offline" ? "🏫 Offline" : "💻 Online (Zoom)"} />
-            <Info label="Địa điểm / Lớp" value={s.location ? `${s.location} · ${s.cls}` : s.cls} />
-            <Info label="Phụ trách / Diễn giả" value={s.host} />
-            <Info label="Mã buổi" value={s.code} />
+        {s.desc && <p className="text-sm leading-relaxed text-muted-foreground">{s.desc}</p>}
+
+        <Separator />
+
+        {/* Links */}
+        <div>
+          <SectionTitle>Tài liệu buổi học</SectionTitle>
+          <div className="flex flex-wrap gap-2">
+            {available.map(({ key, label, icon: Icon }) => (
+              <Button
+                key={key}
+                variant={key === "zoom" ? "default" : "outline"}
+                size="sm"
+                onClick={(e) => e.preventDefault()}
+              >
+                <Icon /> {label}
+              </Button>
+            ))}
+            {missing.map(({ key, label, icon: Icon }) => (
+              <Button key={key} variant="outline" size="sm" disabled>
+                <Icon /> {label} · chưa có
+              </Button>
+            ))}
           </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Slide/record đăng tại <span className="font-mono">#tài-nguyên</span> sẽ tự động gắn
+            vào block buổi này (Session Linker).
+          </p>
+        </div>
 
-          {s.desc && <p className="text-[13px] leading-relaxed text-zinc-300">{s.desc}</p>}
-
-          {/* Links */}
+        {/* FAQ */}
+        {s.faqs?.length > 0 && (
           <div>
-            <SectionTitle>Tài liệu buổi học</SectionTitle>
-            <div className="flex flex-wrap gap-2">
-              {available.map((l) => (
-                <a
-                  key={l.key}
-                  href={s.links[l.key]}
-                  onClick={(e) => e.preventDefault()}
-                  className="flex items-center gap-1.5 rounded-lg bg-[#5865f2] px-3 py-1.5 text-[12.5px] font-semibold text-white transition-colors hover:bg-[#4752c4]"
-                >
-                  {l.icon} {l.label}
-                </a>
+            <SectionTitle>Câu hỏi thường gặp · {t.label}</SectionTitle>
+            <Accordion>
+              {s.faqs.map((f, i) => (
+                <AccordionItem key={i} value={String(i)}>
+                  <AccordionTrigger>{f.q}</AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground">{f.a}</AccordionContent>
+                </AccordionItem>
               ))}
-              {missing.map((l) => (
-                <span
-                  key={l.key}
-                  className="flex items-center gap-1.5 rounded-lg border border-dashed border-zinc-700 px-3 py-1.5 text-[12.5px] text-zinc-600"
-                  title="Sẽ tự động gắn vào buổi khi được đăng lên #tài-nguyên"
-                >
-                  {l.icon} {l.label} · chưa có
-                </span>
-              ))}
-            </div>
-            <p className="mt-1.5 text-[11px] text-zinc-600">
-              Slide/record đăng tại <span className="text-zinc-500">#tài-nguyên</span> sẽ tự động gắn vào
-              block buổi này (Session Linker).
-            </p>
+            </Accordion>
           </div>
+        )}
 
-          {/* FAQ */}
-          {s.faqs?.length > 0 && (
-            <div>
-              <SectionTitle>Câu hỏi thường gặp ({t.label})</SectionTitle>
-              <div className="space-y-1.5">
-                {s.faqs.map((f, i) => (
-                  <details key={i} className="group rounded-lg border border-[#232838] bg-[#171a24]">
-                    <summary className="flex items-center justify-between gap-2 px-3 py-2.5 text-[13px] font-medium text-zinc-200">
-                      {f.q}
-                      <span className="text-zinc-600 transition-transform group-open:rotate-180">⌄</span>
-                    </summary>
-                    <p className="border-t border-[#232838] px-3 py-2.5 text-[12.5px] leading-relaxed text-zinc-400">
-                      {f.a}
-                    </p>
-                  </details>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Footer */}
-          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#232838] bg-[#12141c] px-3 py-2.5">
-            <span className="text-[11px] text-zinc-600">
-              Nguồn: <span className="text-zinc-500">{s.source.channel}</span> · cập nhật {s.source.updated}
-            </span>
-            <span className="text-[11px] text-zinc-500">
-              Chưa rõ? Hỏi Companion: <code className="rounded bg-black/40 px-1.5 py-0.5 text-[#aab4ff]">/ask</code>
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
+        <DialogFooter className="items-center gap-2 sm:justify-between">
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Radio className="size-3" />
+            Nguồn: <span className="font-mono">{s.source.channel}</span> · cập nhật {s.source.updated}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            Chưa rõ? Hỏi Companion:{" "}
+            <kbd className="rounded border bg-muted px-1 py-0.5 font-mono text-[10px] text-foreground">
+              /ask
+            </kbd>
+          </span>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
-function Info({ label, value }) {
+function InfoRow({ label, value, mono }) {
   return (
-    <div className="rounded-lg border border-[#232838] bg-[#171a24] px-3 py-2">
-      <div className="text-[10px] uppercase tracking-wide text-zinc-600">{label}</div>
-      <div className="mt-0.5 text-[12.5px] font-medium text-zinc-200">{value}</div>
+    <div>
+      <div className="text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
+        {label}
+      </div>
+      <div className={"mt-0.5 text-sm " + (mono ? "font-mono" : "")}>{value}</div>
     </div>
   );
 }
 
 function SectionTitle({ children }) {
   return (
-    <h3 className="mb-2 text-[11px] font-bold uppercase tracking-wider text-zinc-500">{children}</h3>
+    <h3 className="mb-2 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+      {children}
+    </h3>
   );
 }
