@@ -1,4 +1,0 @@
-selenium>=4.0,<5
-PyYAML>=6,<7
-pytest>=8,<9
--e .

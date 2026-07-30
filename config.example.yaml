@@ -1,49 +1,6 @@
-browser:
-  cdp_url: "http://127.0.0.1:9222"
-
-channels:
-  - name: "general"
-    type: "text"
-    url: "PASTE_CHANNEL_URL"
-    mode: "latest_messages"
-    limit: 100
-
-  - name: "questions"
-    type: "forum"
-    url: "PASTE_CHANNEL_URL"
-    mode: "all_posts"
-    collect_all_replies: true
-
-  - name: "sharing"
-    type: "forum"
-    url: "PASTE_CHANNEL_URL"
-    mode: "all_posts"
-    collect_all_replies: true
-
-  - name: "lessons"
-    type: "forum"
-    url: "PASTE_CHANNEL_URL"
-    mode: "all_posts"
-    collect_all_replies: true
-
-  - name: "announcements"
-    type: "text"
-    url: "PASTE_CHANNEL_URL"
-    mode: "all"
-
-  - name: "resources"
-    type: "text"
-    url: "PASTE_CHANNEL_URL"
-    mode: "all"
-
-collection:
-  scroll_pause_seconds: 5
-  max_empty_scrolls: 10
-
-output:
-  directory: "./data/discord_crawl"
-  checkpoint_file: "./data/discord_crawl/checkpoint.json"
-  manifest_file: "./data/discord_crawl/manifest.json"
+# Copy thành config.yaml. Chỉ còn phần cấu hình Discord BOT (rebuild/replication) —
+# phần web-collector đã gỡ khỏi repo; manifest là artifact đầu vào có sẵn tại
+# data/discord_crawl/manifest.json.
 
 sources:
   cohort_4_common_announcements:

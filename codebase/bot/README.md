@@ -1,28 +1,30 @@
 # Companion Discord Bot
 
-The source Cohort server is read only through the existing authenticated Edge/CDP browser-session collector. It uses configured Discord channel URLs only; it does not use a Bot API, user token, self-bot, or channel discovery.
+Bot điều khiển của Companion: 5 slash commands (`/ask` `/digest` `/schedule` `/hub` `/ta-digest` — xem `companion_discord/bot.py`) và bộ công cụ rebuild/replication dựng lại kênh trên server đích qua Discord Bot API (destination-only: chỉ tạo/xoá/replay tài nguyên managed trong `DESTINATION_GUILD_ID` sau khi duyệt dry-run).
 
-The Discord Bot API is destination-only: it creates, deletes, and replays managed resources in `DESTINATION_GUILD_ID` after an approved dry-run.
+> Phần thu thập dữ liệu bằng web-collector đã được gỡ khỏi repo. Rebuild/replication
+> đọc manifest có sẵn tại `data/discord_crawl/manifest.json` (artifact đầu vào).
 
-## Clone workflow
-
-1. Keep the logged-in Edge session running at the configured local CDP URL.
-2. Fill the two exact `sources` URLs in root `config.yaml`. Do not substitute a similarly named channel.
-3. Run the browser collector. It preserves existing JSON files, checkpoints each target, and atomically refreshes `data/discord_crawl/manifest.json`.
+## Chạy bot
 
 ```powershell
-uv run --no-project --with-requirements requirements.txt python codebase/bot/run_crawl.py --config config.yaml
+Copy-Item codebase/bot/.env.example codebase/bot/.env   # điền DISCORD_TOKEN, COMPANION_API_URL, COMPANION_UI_URL...
+uv run --no-project --with-requirements codebase/bot/requirements.txt python codebase/bot/run_bot.py
 ```
 
-4. Inspect `data/discord_crawl/manifest.json`, then set only `DISCORD_TOKEN` and `DESTINATION_GUILD_ID` in `codebase/bot/.env`.
-   To reuse pre-existing destination channels, configure their exact IDs under `discord_bot.destination_channel_mappings`; the rebuild validates guild/type/send permission and never falls back to a name match.
-5. Check the destination-only plan. This does not change Discord.
+`/ask` gọi `COMPANION_API_URL/api/ask` (backend `codebase/backend` — chạy `uvicorn api.main:app --port 8000`).
+
+## Rebuild server đích (destination-only)
+
+Cần `data/discord_crawl/manifest.json` + `config.yaml` (copy từ `config.example.yaml`), và `DISCORD_TOKEN` + `DESTINATION_GUILD_ID` trong `codebase/bot/.env`. Để tái dùng kênh đích có sẵn, khai IDs trong `discord_bot.destination_channel_mappings` — rebuild validate guild/type/quyền gửi, không bao giờ match theo tên.
+
+Xem plan (không thay đổi Discord):
 
 ```powershell
 uv run --no-project --with-requirements codebase/bot/requirements.txt python codebase/bot/run_rebuild.py --dry-run --config config.yaml
 ```
 
-6. Only after approving that plan, run apply with both destination confirmations:
+Chỉ sau khi duyệt plan, chạy apply với xác nhận kép:
 
 ```powershell
 uv run --no-project --with-requirements codebase/bot/requirements.txt python codebase/bot/run_rebuild.py --config config.yaml --apply `

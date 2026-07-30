@@ -5,7 +5,9 @@ import asyncio
 import json
 import logging
 import os
-from datetime import UTC, datetime
+from datetime import datetime, timezone
+
+UTC = timezone.utc  # datetime.UTC cần Python 3.11+; giữ tương thích 3.10
 from pathlib import Path
 import re
 
