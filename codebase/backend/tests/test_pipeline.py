@@ -65,3 +65,36 @@ def test_run_once_routes_tai_nguyen_to_resources(tmp_path, monkeypatch):
     assert len(res) == 1
     assert res[0]["session_code"] == "WS-2" and res[0]["kind"] == "slide"
     assert store.get_checkpoint("tai-nguyen") == 2001
+
+
+class FakeVectors:
+    def __init__(self):
+        self.news, self.payloads = {}, {}
+    def upsert_news(self, mid, vec, payload):
+        self.news[mid] = (list(vec), payload)
+    def update_news_payload(self, mid, hearts, comment_count):
+        self.payloads[mid] = (hearts, comment_count)
+
+
+def fake_embed(texts, cfg):
+    return [[float(len(t)), 0.0] for t in texts]
+
+
+def test_run_once_embeds_after_enrich(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    store = Store(str(tmp_path / "t.db"))
+    fv = FakeVectors()
+    stats = run_once(store, SeedSource(SEED), Config(), runner=fake_runner,
+                     vectors=fv, embed_fn=fake_embed)
+    assert stats["embedded"] == 10 and len(fv.news) == 10
+    stats2 = run_once(store, SeedSource(SEED), Config(), runner=fake_runner,
+                      vectors=fv, embed_fn=fake_embed)
+    assert stats2["embedded"] == 0                     # embed-once
+    assert len(fv.payloads) == 10                      # payload refresh vẫn chạy
+
+
+def test_run_once_without_vectors_keeps_old_behavior(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    store = Store(str(tmp_path / "t.db"))
+    stats = run_once(store, SeedSource(SEED), Config(), runner=fake_runner)
+    assert stats["embedded"] == 0

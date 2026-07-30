@@ -14,7 +14,7 @@ def _fallback_summary(content: str) -> str:
 
 
 def run_once(store: Store, source, cfg: Config, limit: int = 20,
-             force: bool = False, runner=None) -> dict:
+             force: bool = False, runner=None, vectors=None, embed_fn=None) -> dict:
     since = {ch: store.get_checkpoint(ch)
              for ch in ("chia-se", "bai-hoc", "tai-nguyen")}
     posts = source.fetch(since=since)
@@ -39,7 +39,28 @@ def run_once(store: Store, source, cfg: Config, limit: int = 20,
             store.mark_enrich_failed(row["message_id"],
                                      _fallback_summary(row["content"]))
             failed += 1
-    return {"fetched": len(posts), "enriched": enriched, "failed": failed}
+
+    embedded = 0
+    if vectors is not None:
+        from recsys import embed_texts as _default_embed, news_text
+        embed = embed_fn or _default_embed
+        rows = store.pending_embedding(force=force)
+        if rows:
+            try:
+                vecs = embed([news_text(r) for r in rows], cfg)
+                for r, vec in zip(rows, vecs):
+                    vectors.upsert_news(r["message_id"], vec, {
+                        "tags": r["tags"], "created_at": r["created_at"],
+                        "hearts": r["hearts"], "comment_count": r["comment_count"]})
+                    store.set_embedded(r["message_id"])
+                    embedded += 1
+            except Exception as exc:  # embed lỗi: không set_embedded, thử lại lượt sau
+                print(f"[embed-fail] {exc}")
+        for m in store.embedded_news_meta():
+            vectors.update_news_payload(m["message_id"], m["hearts"], m["comment_count"])
+
+    return {"fetched": len(posts), "enriched": enriched, "failed": failed,
+            "embedded": embedded}
 
 
 def main():
@@ -54,6 +75,12 @@ def main():
 
     cfg = Config.from_env()
     store = Store(args.db or cfg.db_path)
+    try:
+        from recsys import VectorStore
+        vectors = VectorStore(cfg.qdrant_path)
+    except Exception as exc:
+        print(f"[recsys] qdrant busy/unavailable: {exc} (bỏ qua embed)")
+        vectors = None
     if args.source == "seed":
         source = SeedSource(args.seed)
     else:
@@ -61,7 +88,8 @@ def main():
         source = DiscordSource(cfg.discord_token, cfg.channel_ids, cfg.guild_id)
 
     while True:
-        stats = run_once(store, source, cfg, limit=args.limit, force=args.force)
+        stats = run_once(store, source, cfg, limit=args.limit, force=args.force,
+                         vectors=vectors)
         print(f"[ingest] {stats}")
         if not args.loop:
             break
