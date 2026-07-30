@@ -4,7 +4,6 @@ import {
   CalendarClock,
   Clapperboard,
   FileText,
-  Hash,
   MapPin,
   Presentation,
   Radio,
@@ -14,7 +13,6 @@ import {
 import { SESSION_TYPES, fmtDM } from "../data/mock.js";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
@@ -39,8 +37,9 @@ export default function SessionModal({ session: s, onClose }) {
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-[580px]">
-        <DialogHeader>
+      <DialogContent className="max-h-[85vh] gap-5 overflow-y-auto p-6 sm:max-w-[600px]">
+        {/* Header thoáng: badge → title lớn → ngày giờ nổi bật */}
+        <DialogHeader className="gap-2.5">
           <div className="flex items-center gap-2">
             <Badge className="font-mono" style={{ background: t.color + "1a", color: t.color }}>
               {s.code}
@@ -49,40 +48,40 @@ export default function SessionModal({ session: s, onClose }) {
               {t.label}
             </span>
           </div>
-          <DialogTitle className="text-lg leading-snug">{s.title}</DialogTitle>
+          <DialogTitle className="text-xl leading-snug">{s.title}</DialogTitle>
+          <div className="flex items-center gap-2 text-sm font-medium text-primary">
+            <CalendarClock className="size-4" />
+            <span className="font-mono">
+              {DAY_FULL[s.date.getDay()]}, {fmtDM(s.date)} · {s.timeLabel}
+            </span>
+          </div>
         </DialogHeader>
 
-        {/* Thông tin buổi học — icon + label highlight */}
-        <div className="grid grid-cols-2 gap-2.5">
-          <InfoCard
-            icon={CalendarClock}
-            label="Ngày & giờ"
-            value={`${DAY_FULL[s.date.getDay()]}, ${fmtDM(s.date)} · ${s.timeLabel}`}
-            mono
-            wide
-          />
-          <InfoCard
+        {/* Một panel mềm duy nhất thay vì 5 ô đóng khung */}
+        <div className="grid grid-cols-2 gap-x-6 gap-y-4 rounded-xl bg-muted/50 p-4 sm:grid-cols-3">
+          <Info
             icon={s.format === "Offline" ? Building2 : Video}
             label="Hình thức"
             value={s.format === "Offline" ? "Offline" : "Online (Zoom)"}
           />
-          <InfoCard
+          <Info
             icon={MapPin}
             label="Địa điểm / Lớp"
             value={s.location ? `${s.location} · ${s.cls}` : s.cls}
           />
-          <InfoCard icon={UserRound} label="Phụ trách / Diễn giả" value={s.host} />
-          <InfoCard icon={Hash} label="Mã buổi" value={s.code} mono />
+          <Info icon={UserRound} label="Phụ trách / Diễn giả" value={s.host} />
         </div>
 
-        {/* Tóm tắt nội dung bài học */}
+        {/* Tóm tắt nội dung */}
         <div>
           <SectionTitle icon={BookOpenText}>Tóm tắt nội dung</SectionTitle>
-          {s.desc && <p className="mb-2 text-sm leading-relaxed text-muted-foreground">{s.desc}</p>}
+          {s.desc && (
+            <p className="mb-2.5 text-sm leading-relaxed text-muted-foreground">{s.desc}</p>
+          )}
           {s.summary?.length > 0 && (
-            <ul className="space-y-1.5">
+            <ul className="space-y-2">
               {s.summary.map((line, i) => (
-                <li key={i} className="flex gap-2 text-sm leading-relaxed">
+                <li key={i} className="flex gap-2.5 text-sm leading-relaxed">
                   <span
                     className="mt-[7px] size-1.5 shrink-0 rounded-full"
                     style={{ background: t.color }}
@@ -94,9 +93,7 @@ export default function SessionModal({ session: s, onClose }) {
           )}
         </div>
 
-        <Separator />
-
-        {/* Links */}
+        {/* Tài liệu */}
         <div>
           <SectionTitle icon={FileText}>Tài liệu buổi học</SectionTitle>
           <div className="flex flex-wrap gap-2">
@@ -122,14 +119,14 @@ export default function SessionModal({ session: s, onClose }) {
           </p>
         </div>
 
-        <DialogFooter className="items-center gap-2 sm:justify-between">
+        <DialogFooter className="-mx-6 -mb-6 items-center gap-2 px-6 sm:justify-between">
           <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Radio className="size-3" />
             Nguồn: <span className="font-mono">{s.source.channel}</span> · cập nhật {s.source.updated}
           </span>
           <span className="text-xs text-muted-foreground">
             Chưa rõ? Hỏi Companion:{" "}
-            <kbd className="rounded border bg-muted px-1 py-0.5 font-mono text-[10px] text-foreground">
+            <kbd className="rounded border bg-background px-1 py-0.5 font-mono text-[10px] text-foreground">
               /ask
             </kbd>
           </span>
@@ -139,23 +136,13 @@ export default function SessionModal({ session: s, onClose }) {
   );
 }
 
-function InfoCard({ icon: Icon, label, value, mono, wide }) {
+function Info({ icon: Icon, label, value }) {
   return (
-    <div
-      className={
-        "flex items-center gap-2.5 rounded-lg border bg-muted/40 px-3 py-2.5 " +
-        (wide ? "col-span-2" : "")
-      }
-    >
-      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-        <Icon className="size-4" />
+    <div className="min-w-0">
+      <div className="flex items-center gap-1.5 text-[10px] font-semibold tracking-wider text-primary uppercase">
+        <Icon className="size-3.5 shrink-0" /> {label}
       </div>
-      <div className="min-w-0">
-        <div className="text-[10px] font-semibold tracking-wider text-primary uppercase">
-          {label}
-        </div>
-        <div className={"truncate text-sm font-medium " + (mono ? "font-mono" : "")}>{value}</div>
-      </div>
+      <div className="mt-1 text-sm font-medium">{value}</div>
     </div>
   );
 }

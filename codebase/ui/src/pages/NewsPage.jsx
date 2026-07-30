@@ -2,10 +2,9 @@ import { useMemo, useState } from "react";
 import { Bookmark, Flame, Heart, Inbox, MessageSquare, Sparkles } from "lucide-react";
 import { NEWS, NEWS_TAGS, ROLE_COLORS, isHot } from "../data/mock.js";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import NewsModal, { Avatar, TagBadge } from "../components/NewsModal.jsx";
+import NewsModal, { Avatar, TagBadge, TAG_ICONS } from "../components/NewsModal.jsx";
 
 export default function NewsPage() {
   const [tag, setTag] = useState("all");
@@ -48,25 +47,43 @@ export default function NewsPage() {
           <Flame className="size-3.5 text-orange-500" /> Hot trend
         </h2>
         <div className="grid gap-2.5 sm:grid-cols-3">
-          {hot.map((n) => (
-            <Card
-              key={n.id}
-              size="sm"
-              className="cursor-pointer gap-2 transition-shadow hover:shadow-md"
-              onClick={() => setSelected(n)}
-            >
-              <div className="flex items-center gap-1.5 px-3">
-                <TagBadge tag={n.tags[0]} />
-                <Flame className="ml-auto size-3.5 text-orange-500" />
-              </div>
-              <div className="line-clamp-2 px-3 text-sm leading-snug font-semibold">{n.title}</div>
-              <div className="mt-auto flex items-center gap-3 px-3 text-xs text-muted-foreground">
-                <Meta icon={Heart} value={n.hearts} />
-                <Meta icon={MessageSquare} value={n.comments.length} />
-                <span className="ml-auto">{n.time}</span>
-              </div>
-            </Card>
-          ))}
+          {hot.map((n) => {
+            const roleColor = ROLE_COLORS[n.role] ?? "#64748b";
+            return (
+              <Card
+                key={n.id}
+                size="sm"
+                className="cursor-pointer gap-2 transition-shadow hover:shadow-md"
+                onClick={() => setSelected(n)}
+              >
+                <div className="flex items-center gap-1.5 px-3">
+                  <TagBadge tag={n.tags[0]} />
+                  <Flame className="ml-auto size-3.5 shrink-0 text-orange-500" />
+                  <BookmarkButton
+                    active={bookmarks.has(n.id)}
+                    onToggle={() => toggleBookmark(n.id)}
+                  />
+                </div>
+                <div className="line-clamp-2 min-h-10 px-3 text-sm leading-snug font-semibold">
+                  {n.title}
+                </div>
+                <div className="flex items-center gap-1.5 px-3">
+                  <Avatar name={n.author} role={n.role} className="size-4.5 text-[9px]" />
+                  <span
+                    className="truncate text-xs font-medium"
+                    style={{ color: roleColor }}
+                  >
+                    {n.author}
+                  </span>
+                </div>
+                <div className="mt-auto flex items-center gap-3 px-3 text-xs text-muted-foreground">
+                  <Meta icon={Heart} value={n.hearts} />
+                  <Meta icon={MessageSquare} value={n.comments.length} />
+                  <span className="ml-auto truncate">{n.time}</span>
+                </div>
+              </Card>
+            );
+          })}
         </div>
       </div>
 
@@ -80,6 +97,7 @@ export default function NewsPage() {
             onClick={() => setTag(t.id)}
             label={t.label}
             color={t.color}
+            icon={TAG_ICONS[t.id]}
           />
         ))}
       </div>
@@ -112,17 +130,17 @@ function NewsCard({ n, bookmarked, onBookmark, onOpen }) {
   const roleColor = ROLE_COLORS[n.role] ?? "#64748b";
   return (
     <Card
-      className="cursor-pointer flex-row gap-4 p-4 transition-shadow hover:shadow-md"
+      className="cursor-pointer flex-row gap-0 p-0 transition-shadow hover:shadow-md"
       onClick={onOpen}
     >
-      {/* Ảnh minh hoạ (production: AI lấy qua API tìm ảnh, vd Tavily) */}
+      {/* Ảnh phủ kín góc trái block (production: AI lấy qua API tìm ảnh, vd Tavily) */}
       <img
         src={n.image}
         alt=""
-        className="hidden size-28 shrink-0 rounded-lg border object-cover sm:block"
+        className="hidden w-40 shrink-0 self-stretch object-cover sm:block"
       />
 
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5 py-0.5">
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5 p-4">
         {/* Hàng trên: tags — time + bookmark */}
         <div className="flex items-start gap-1.5">
           <div className="flex flex-wrap items-center gap-1.5">
@@ -133,18 +151,7 @@ function NewsCard({ n, bookmarked, onBookmark, onOpen }) {
           </div>
           <div className="ml-auto flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
             <span>{n.time}</span>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label={bookmarked ? "Bỏ đánh dấu" : "Đánh dấu bài viết"}
-              className={cn(bookmarked && "text-primary")}
-              onClick={(e) => {
-                e.stopPropagation();
-                onBookmark();
-              }}
-            >
-              <Bookmark className={cn(bookmarked && "fill-current")} />
-            </Button>
+            <BookmarkButton active={bookmarked} onToggle={onBookmark} />
           </div>
         </div>
 
@@ -157,7 +164,7 @@ function NewsCard({ n, bookmarked, onBookmark, onOpen }) {
         </p>
 
         {/* Hàng dưới: author chip màu role + kênh + tim/comment */}
-        <div className="mt-auto flex flex-wrap items-center gap-2 pt-1 text-xs text-muted-foreground">
+        <div className="mt-auto flex flex-wrap items-center gap-x-2.5 gap-y-1 pt-1.5 text-xs text-muted-foreground">
           <span
             className="flex items-center gap-1.5 rounded-full border py-0.5 pr-2.5 pl-0.5"
             style={{ borderColor: roleColor + "55", background: roleColor + "0d" }}
@@ -177,6 +184,23 @@ function NewsCard({ n, bookmarked, onBookmark, onOpen }) {
   );
 }
 
+function BookmarkButton({ active, onToggle }) {
+  return (
+    <Button
+      variant="ghost"
+      size="icon-sm"
+      aria-label={active ? "Bỏ đánh dấu" : "Đánh dấu bài viết"}
+      className={cn("shrink-0", active && "text-primary")}
+      onClick={(e) => {
+        e.stopPropagation();
+        onToggle();
+      }}
+    >
+      <Bookmark className={cn(active && "fill-current")} />
+    </Button>
+  );
+}
+
 function Meta({ icon: Icon, value }) {
   return (
     <span className="flex items-center gap-1">
@@ -186,7 +210,7 @@ function Meta({ icon: Icon, value }) {
   );
 }
 
-function TagChip({ active, onClick, label, color }) {
+function TagChip({ active, onClick, label, color, icon: Icon }) {
   return (
     <Button
       variant={active ? "secondary" : "outline"}
@@ -194,7 +218,7 @@ function TagChip({ active, onClick, label, color }) {
       onClick={onClick}
       className={cn(!active && "text-muted-foreground")}
     >
-      {color && <span className="size-2 rounded-full" style={{ background: color }} />}
+      {Icon ? <Icon style={color ? { color } : undefined} /> : null}
       {label}
     </Button>
   );

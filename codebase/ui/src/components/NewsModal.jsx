@@ -1,5 +1,35 @@
-import { ArrowUpRight, Heart, MessageSquare, Send, Sparkles } from "lucide-react";
+import {
+  ArrowUpRight,
+  Brain,
+  ClipboardList,
+  Database,
+  Heart,
+  HeartHandshake,
+  MessageSquare,
+  Network,
+  Palette,
+  Plug,
+  Send,
+  Sparkles,
+  Tag,
+  Wand2,
+  Wrench,
+} from "lucide-react";
 import { ROLE_COLORS, tagOf } from "../data/mock.js";
+
+// Icon cho 10 tag taxonomy — dùng chung cho badge và filter chip
+export const TAG_ICONS = {
+  "ai-model": Brain,
+  "ai-skill": Wand2,
+  "ai-tools": Wrench,
+  "api-mcp": Plug,
+  "system-design": Network,
+  uiux: Palette,
+  dataset: Database,
+  "soft-skills": HeartHandshake,
+  survey: ClipboardList,
+  other: Tag,
+};
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,8 +52,10 @@ export function Avatar({ name, role, className = "size-6 text-[11px]" }) {
 export function TagBadge({ tag }) {
   const t = tagOf(tag);
   if (!t) return null;
+  const Icon = TAG_ICONS[tag];
   return (
-    <Badge className="font-medium" style={{ background: t.color + "16", color: t.color }}>
+    <Badge className="gap-1 font-medium" style={{ background: t.color + "16", color: t.color }}>
+      {Icon && <Icon />}
       {t.label}
     </Badge>
   );
