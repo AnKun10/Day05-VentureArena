@@ -1,0 +1,16 @@
+# PLACEHOLDER — owner chính thức là Bình (codebase/data/ta_roster.yaml theo MASTERPLAN.md §6/§8).
+# Map lớp/lab phụ trách -> tài khoản Discord TA nhận bản tổng hợp qua /ta-digest.
+# discord_id để trống ("") nghĩa là chưa gán — dùng server test thì điền id member giả lập.
+
+- class: "Lab-D305"
+  ta_name: "M.A"
+  discord_id: ""
+- class: "Lab-D302"
+  ta_name: "H.T"
+  discord_id: ""
+- class: "Lý thuyết chung"
+  ta_name: "T088"
+  discord_id: ""
+- class: "Chung"
+  ta_name: "TA trực tuần"
+  discord_id: ""

@@ -1,0 +1,41 @@
+# Seed dùng khi DB chưa có post nào (server test mới dựng / chưa chạy ingestion lần nào).
+# /digest ưu tiên đọc từ SQLite (bảng posts); seed này chỉ là fallback demo.
+# ⚠️ Taxonomy loại tin (category) là PLACEHOLDER — An chốt bộ chính thức sau (xem MASTERPLAN.md §3),
+# sửa danh sách CATEGORIES trong knowledge.py là toàn bộ chỗ dùng category đổi theo.
+
+- title: "Nhắc lịch Workshop 3 — 20:00 tối nay"
+  category: announce
+  channel: "#thông-báo"
+  author: "BTC"
+  jump_link: "#"
+  reactions: 38
+  comments: 5
+- title: "QR báo lỗi / thiếu thẻ phòng lab"
+  category: qa
+  channel: "#hỏi-đáp"
+  author: "Lab Coach M.A"
+  jump_link: "#"
+  reactions: 22
+  comments: 22
+- title: "Bảo lưu thì có được nhận trợ cấp học viên không?"
+  category: qa
+  channel: "#hỏi-đáp"
+  author: "Học viên T.T"
+  jump_link: "#"
+  reactions: 1
+  comments: 0
+  open: true
+- title: "[Deep-dive] BEV — Góc nhìn thượng đế của xe tự hành"
+  category: share
+  channel: "#bài-học"
+  author: "GR16 — T112"
+  jump_link: "#"
+  reactions: 3
+  comments: 2
+- title: "Slide Workshop WS2: Problem → MVP Canvas"
+  category: resource
+  channel: "#tài-nguyên"
+  author: "BTC"
+  jump_link: "#"
+  reactions: 30
+  comments: 0

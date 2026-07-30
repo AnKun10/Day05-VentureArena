@@ -1,0 +1,45 @@
+# PLACEHOLDER — FAQ theo LOẠI buổi (khớp COMMON_FAQS trong codebase/ui/src/data/mock.js để hai bên demo đồng bộ).
+# Bình sẽ mở rộng/thay bằng bản chính thức. Mỗi entry: câu hỏi mẫu + câu trả lời + từ khoá dùng để match trong decision.py.
+
+LT:
+  - q: "Buổi lý thuyết có điểm danh không?"
+    a: "Có, điểm danh qua link trong kênh lớp 15 phút đầu giờ. Vắng có phép thì báo TA trước buổi học."
+    keywords: ["điểm danh"]
+  - q: "Record buổi học đăng ở đâu, khi nào?"
+    a: "Record đăng tại kênh #tài-nguyên trong vòng 24h sau buổi học và tự động gắn vào block buổi tương ứng trên trang Lịch học."
+    keywords: ["record", "ghi hình", "quay lại"]
+
+LAB:
+  - q: "Không có thẻ vào phòng lab / thẻ lỗi thì làm sao?"
+    a: "Điền form báo lỗi thẻ được pin trong kênh #hỏi-đáp (bài 'QR báo lỗi/thiếu thẻ'). Lab Coach sẽ xử lý trước buổi học."
+    keywords: ["thẻ", "vào phòng"]
+  - q: "Nộp bài lab ở đâu, deadline khi nào?"
+    a: "Nộp qua link trong kênh lớp Lab của bạn, deadline 23:59 cùng ngày buổi lab. Xem chi tiết trong block buổi trên Lịch học."
+    keywords: ["deadline", "nộp bài", "nộp lab"]
+  - q: "Kẹt kỹ thuật trong buổi lab thì gọi ai?"
+    a: "Giơ tay gọi Lab Coach trong phòng, hoặc post vào kênh lớp kèm ảnh chụp lỗi để TA hỗ trợ."
+    keywords: ["kẹt", "lỗi", "không chạy được"]
+
+WS:
+  - q: "Workshop có bắt buộc tham gia không?"
+    a: "Khuyến khích tham gia trực tiếp; nếu bận có thể xem record (đăng trong vòng 24h tại #tài-nguyên)."
+    keywords: ["bắt buộc", "tham gia"]
+  - q: "Slide và record của workshop lấy ở đâu?"
+    a: "Sau buổi, slide + record được đăng ở #tài-nguyên và gắn vào đúng block buổi này."
+    keywords: ["slide", "record"]
+
+OH:
+  - q: "Đăng ký slot office hour thế nào?"
+    a: "Đăng ký qua link trong thông báo tuần ở #thông-báo; mỗi nhóm tối đa 1 slot / tuần."
+    keywords: ["đăng ký", "slot"]
+  - q: "Office hour hỏi được những gì?"
+    a: "Mọi thứ về bài học, dự án, định hướng. Câu hỏi về điểm số / trường hợp cá nhân thì liên hệ BTC qua email chương trình."
+    keywords: ["hỏi gì", "nội dung"]
+
+MD:
+  - q: "Mentor duty là gì?"
+    a: "Buổi làm việc định kỳ giữa team và mentor: review tiến độ, gỡ vướng, định hướng tuần kế tiếp."
+    keywords: ["là gì"]
+  - q: "Team cần chuẩn bị gì trước buổi mentor duty?"
+    a: "Gửi báo cáo tiến độ cho mentor TRƯỚC buổi làm việc (quy định bắt buộc — xem thông báo ở #thông-báo)."
+    keywords: ["chuẩn bị", "báo cáo"]

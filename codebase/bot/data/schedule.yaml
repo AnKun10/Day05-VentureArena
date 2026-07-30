@@ -1,0 +1,78 @@
+# PLACEHOLDER — Bình sẽ curate bản chính thức (owner: codebase/data/schedule.yaml theo MASTERPLAN.md §8).
+# Minh dùng bản rút gọn này để bot /schedule và /ask có gì đó thật để trả lời trong lúc chờ.
+# Mã buổi chuẩn: LT-x / Lab-x / WS-x / OH-x / MD-x — mọi tài liệu/thông báo gắn vào buổi qua mã này.
+
+sessions:
+  - code: LT-11
+    type: LT
+    title: "Agent & tool use: từ demo đến production"
+    day_offset: 1
+    start: "19:30"
+    end: "21:30"
+    format: Zoom
+    class: "Lý thuyết chung"
+    host: "Giảng viên khoá"
+    updated: "2026-07-29"
+    source_channel: "#thông-báo"
+
+  - code: Lab-10
+    type: LAB
+    title: "Lab: Discord bot + slash command"
+    day_offset: 2
+    start: "18:30"
+    end: "21:00"
+    format: Offline
+    location: "Phòng D305"
+    class: "Lab-D305"
+    host: "Lab Coach: M.A"
+    deadline: "23:59 cùng ngày buổi lab"
+    updated: "2026-07-29"
+    source_channel: "#thông-báo"
+
+  - code: LT-12
+    type: LT
+    title: "Human-AI interaction: HAX & PAIR"
+    day_offset: 3
+    start: "19:30"
+    end: "21:30"
+    format: Zoom
+    class: "Lý thuyết chung"
+    host: "Giảng viên khoá"
+    updated: "2026-07-29"
+    source_channel: "#thông-báo"
+
+  - code: WS-3
+    type: WS
+    title: "Kinh nghiệm quản lý dự án & duy trì năng suất"
+    day_offset: 5
+    start: "20:00"
+    end: "22:00"
+    format: Zoom
+    class: "Toàn khoá"
+    host: "Diễn giả khách mời"
+    updated: "2026-07-28"
+    source_channel: "#thông-báo"
+
+  - code: OH-5
+    type: OH
+    title: "Office hour tuần 5"
+    day_offset: 0
+    start: "19:00"
+    end: "20:30"
+    format: Zoom
+    class: "Chung"
+    host: "TA trực: T088"
+    updated: "2026-07-28"
+    source_channel: "#thông-báo"
+
+  - code: MD-5
+    type: MD
+    title: "Mentor duty tuần 5"
+    day_offset: 4
+    start: "20:00"
+    end: "21:30"
+    format: Zoom
+    class: "Theo nhóm"
+    host: "Mentor của nhóm"
+    updated: "2026-07-28"
+    source_channel: "#thông-báo"

@@ -4,3 +4,10 @@ node_modules/
 .env
 dist/
 .playwright-mcp/
+
+# Python (codebase/bot)
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.sqlite3
