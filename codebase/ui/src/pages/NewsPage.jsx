@@ -117,7 +117,7 @@ export default function NewsPage() {
               <select
                 className="h-8 rounded-lg border bg-background px-2 text-sm"
                 value={selectedUser ?? ""}
-                onChange={(e) => setSelectedUser(Number(e.target.value))}
+                onChange={(e) => setSelectedUser(e.target.value)}
               >
                 {users.map((u) => (
                   <option key={u.user_id} value={u.user_id}>
