@@ -23,3 +23,19 @@ def test_from_env_reads_values(monkeypatch):
     assert cfg.enrich_model == "gpt-5"
     assert cfg.channel_ids["chia-se"] == "111"
     assert cfg.guild_id == "999"
+
+
+def test_recsys_config_defaults(monkeypatch):
+    monkeypatch.delenv("EMBED_MODEL", raising=False)
+    monkeypatch.delenv("QDRANT_PATH", raising=False)
+    cfg = Config.from_env()
+    assert cfg.embed_model == "text-embedding-3-small"
+    assert cfg.qdrant_path == "qdrant_data"
+
+
+def test_recsys_config_reads_env(monkeypatch):
+    monkeypatch.setenv("EMBED_MODEL", "text-embedding-3-large")
+    monkeypatch.setenv("QDRANT_PATH", "x_data")
+    cfg = Config.from_env()
+    assert cfg.embed_model == "text-embedding-3-large"
+    assert cfg.qdrant_path == "x_data"

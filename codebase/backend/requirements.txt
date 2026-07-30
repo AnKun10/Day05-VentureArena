@@ -6,3 +6,5 @@ python-dotenv>=1.0
 fastapi>=0.111
 uvicorn>=0.30
 pytest>=8.2
+qdrant-client>=1.9
+openai>=1.40
