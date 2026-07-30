@@ -8,6 +8,7 @@ và sửa (không phải case giả định).
 """
 
 import unittest
+from types import SimpleNamespace
 
 import config
 
@@ -53,6 +54,21 @@ class TestClassifyChannel(unittest.TestCase):
         self.assertEqual(k3, "K3-Lab-D305")
         self.assertEqual(k4, "K4-Lab-D305")
         self.assertNotEqual(k3, k4)
+
+    def test_class_code_for_discord_channel_shared_by_ask_and_ingestion(self):
+        # Bug thật: ask_cog.py từng gọi class_code_for_channel() thẳng, KHÔNG truyền cohort, nên escalation
+        # từ /ask trong thread "Lab-D305" ra mã lớp trần "Lab-D305" — không khớp "K3-Lab-D305"/"K4-Lab-D305"
+        # mà ingestion.listener.py ghi cho CÙNG thread đó. Giờ cả 2 nơi phải dùng chung hàm này.
+        category = SimpleNamespace(name="LỚP HỌC - KHOÁ 3")
+        forum = SimpleNamespace(name="thực-hành-lab", category=category)
+        thread = SimpleNamespace(name="Lab-D305", parent=forum)
+
+        self.assertEqual(config.class_code_for_discord_channel(thread), "K3-Lab-D305")
+
+    def test_class_code_for_discord_channel_non_thread_returns_none(self):
+        # Kênh Text thường (không phải thread trong forum) không có .parent -> không phải phòng lớp cụ thể.
+        text_channel = SimpleNamespace(name="chung")
+        self.assertIsNone(config.class_code_for_discord_channel(text_channel))
 
     def test_unrelated_channels_ignored(self):
         for name in ["🔝-activity", "🤖-gõ-commands", "💬-chung", "OFFICE HOURS - KÊNH 01"]:

@@ -109,3 +109,21 @@ def class_code_for_channel(channel_name: str, cohort: str | None = None) -> str 
     room = name_norm[len(prefix):].upper()
     code = f"{label}-{room}"
     return f"{cohort}-{code}" if cohort else code
+
+
+def class_code_for_discord_channel(channel) -> str | None:
+    """Suy mã lớp trực tiếp từ 1 channel/thread Discord thật — dùng chung cho `ask_cog.py` và
+    `ingestion/listener.py` để tránh lặp logic suy cohort ở 2 nơi (từng lặp và LỆCH nhau — bug thật:
+    ask_cog.py quên truyền cohort nên escalation ra mã lớp trần "Lab-D305", không khớp
+    "K3-Lab-D305"/"K4-Lab-D305" trong ta_roster.yaml mà ingestion đã ghi cho cùng phòng đó).
+
+    Duck-type qua `.parent` thay vì `isinstance(discord.Thread)` để module này không phải import discord.py
+    (giữ config.py test được bằng string/mock thuần, không cần dựng discord.Thread giả).
+    """
+    parent = getattr(channel, "parent", None)
+    leaf_name = getattr(channel, "name", "") or ""
+    cohort = None
+    if parent is not None:
+        category = getattr(parent, "category", None)
+        cohort = cohort_from_category(getattr(category, "name", None))
+    return class_code_for_channel(leaf_name, cohort=cohort)

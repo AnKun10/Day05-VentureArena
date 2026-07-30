@@ -70,19 +70,10 @@ class IngestionCog(commands.Cog):
 
         session_code = best_session_code(message.content) if group == "tai_nguyen" else None
 
-        # Mã lớp: trên server thật, `lý-thuyết`/`thực-hành-lab` là kênh FORUM — mỗi PHÒNG (vd "Lab-D305",
-        # "Lec-D302") là 1 THREAD riêng, đặt tên theo phòng. `channel_name` ở trên đã bị resolve về tên
-        # kênh CHA (dùng để phân loại nhóm) nên phải soi mã lớp trên tên THREAD, không phải tên cha —
-        # nếu soi nhầm trên tên cha thì mọi bài trong lý-thuyết/thực-hành-lab đều ra class_code=None.
-        #
-        # Khoá 3 và Khoá 4 dùng CHUNG số phòng (cả 2 khoá đều có "Lab-D305" riêng) — phải phân biệt
-        # bằng category cha (vd "LỚP HỌC - KHOÁ 3") kẻo escalation của 2 khoá bị gộp nhầm 1 mã lớp.
-        leaf_name = message.channel.name if is_thread else channel_name
-        cohort = None
-        if is_thread:
-            category = getattr(message.channel.parent, "category", None)
-            cohort = config.cohort_from_category(getattr(category, "name", None))
-        class_code = config.class_code_for_channel(leaf_name, cohort=cohort)
+        # Mã lớp: dùng chung config.class_code_for_discord_channel() với ask_cog.py (soi trên tên THREAD
+        # + cohort từ category cha, không phải tên forum cha) — 2 nơi từng lặp logic này và LỆCH nhau
+        # (bug thật đã bắt được), xem docstring của hàm đó.
+        class_code = config.class_code_for_discord_channel(message.channel)
 
         db.upsert_post(
             self.db_path,

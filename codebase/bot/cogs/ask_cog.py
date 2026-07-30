@@ -25,7 +25,7 @@ class AskCog(commands.Cog):
     @app_commands.command(name="ask", description="Hỏi về lịch học / tài liệu / logistics của khoá")
     @app_commands.describe(question="Câu hỏi của bạn")
     async def ask(self, interaction: discord.Interaction, question: str) -> None:
-        class_code = config.class_code_for_channel(getattr(interaction.channel, "name", "") or "")
+        class_code = config.class_code_for_discord_channel(interaction.channel)
         result: Decision = decide(question, self.kb, asked_by_class=class_code)
 
         asked_by = str(interaction.user)
