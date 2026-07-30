@@ -183,7 +183,7 @@ export default function NewsPage() {
               </>
             ) : (
               <div className="grid gap-2.5 sm:grid-cols-3">
-                {recs.slice(0, 3).map((r) => {
+                {recs.slice(0, 6).map((r) => {
                   const roleColor = ROLE_COLORS[r.author_role] ?? "#64748b";
                   const mockMatch = findMockByTitle(r.title);
                   return (
