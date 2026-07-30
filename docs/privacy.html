@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Privacy Policy for Companion Discord Bot.">
+    <title>Privacy Policy — Companion Discord Bot</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="bar">
+        <a class="brand" href="index.html">Companion Discord Bot</a>
+        <nav aria-label="Legal pages">
+          <a href="terms.html">Terms of Service</a>
+          <a href="privacy.html" aria-current="page">Privacy Policy</a>
+        </nav>
+      </div>
+    </header>
+    <main>
+      <p class="eyebrow">Privacy Policy</p>
+      <h1>Privacy Policy</h1>
+      <p class="meta">Effective date: July 30, 2026 · Last updated: July 30, 2026</p>
+      <aside class="notice" aria-label="Retention notice">
+        An automatic deletion schedule is not implemented in the current code. The published retention period is <code class="highlight">90 days</code>.
+      </aside>
+
+      <h2>Scope</h2>
+      <p>This policy describes the current Companion Discord Bot implementation. The public Discord application name is <code class="highlight">Personalized Discord Companion Agent</code>.</p>
+
+      <h2>Data We Collect or Process</h2>
+      <p>For messages from explicitly configured source channels and forum threads, the ingestion worker stores the following in a local SQLite database:</p>
+      <ul>
+        <li>Discord message ID and channel ID;</li>
+        <li>the message author’s Discord user ID, display name, and non-default role names;</li>
+        <li>message and forum-thread content, the source group, creation time, and the Discord jump link;</li>
+        <li>attachment file names and attachment URLs, when Discord supplies them; and</li>
+        <li>forum-thread messages when the configured source is a forum channel.</li>
+      </ul>
+      <p>The current bot database does not separately store a server ID or a thread ID. A stored Discord jump link may contain Discord identifiers. Attachments are not downloaded or stored as files by this bot; only their names and URLs are stored.</p>
+      <p>When you use <code>/ask</code>, the bot sends the question to the local Companion API. The API writes an operational trace containing the question, answer decision, answer text, citations, confidence, timestamp, and, when applicable, the AI-provider name. If the system cannot answer, it also stores the question, optional class name, and timestamp in an unanswered-question queue for a TA digest. Other slash commands are processed to respond to the interaction; the current code does not create a separate database record for them. The <code>/ta-digest</code> command uses the requesting Discord user ID to find that TA’s assigned classes and may send the resulting digest by Discord direct message.</p>
+      <p>Demo content intentionally entered into a demo Discord server is processed and stored in the same way as other configured source content. Do not enter sensitive personal information into a demo server.</p>
+
+      <h2>Why We Process Data</h2>
+      <p>We process this data to ingest configured course sources, produce a digest with links back to the original Discord content, answer course logistics questions from source material, record unanswered questions for the relevant TA, operate the Service, and diagnose its answers.</p>
+
+      <h2>Storage and Retention</h2>
+      <p>Ingested posts are stored in a local SQLite database. Operational traces are stored as local JSON files, and unanswered questions are stored in SQLite. The current code has no automatic deletion process or configured retention duration. Records will be retained for <code class="highlight">90 days</code>, unless a longer period is required to resolve a security issue or legal obligation.</p>
+
+      <h2>Third-party AI Providers</h2>
+      <p>When an answer is found, the backend may send your <code>/ask</code> question and the selected official source excerpt to the first available provider in its configured fallback order. The current code supports OpenAI, Google Gemini, OpenRouter, and Cerebras. The provider that receives a particular request depends on the deployment configuration and provider availability. The bot does not send Discord bot tokens, client secrets, or API keys to those providers.</p>
+
+      <h2>Sharing and Sale of Personal Data</h2>
+      <p>We do not sell personal data. We share data only as needed to operate the Service: with Discord for Discord interactions and, when the AI answer route is used, with the configured AI provider as described above. A TA digest is sent only to the Discord account mapped to the relevant course class.</p>
+
+      <h2>Data Security</h2>
+      <p>The Service limits ingestion to configured channels and uses local files and databases for operational data. Access should be limited to authorized operators. No security measure is perfect, and you should not submit sensitive information through the Service.</p>
+
+      <h2>Your Access and Deletion Requests</h2>
+      <p>To request access to or deletion of data associated with you, email <code class="highlight">bopbin@gmail.com</code> with your Discord user ID, the relevant server/channel or message link, and the request type. We may need to verify that you control the Discord account before acting. Deletion may be limited where retention is necessary for security, legal obligations, or an unresolved course-support request.</p>
+
+      <h2>Children’s Privacy</h2>
+      <p>The Service is not directed to children under the age at which they can independently use Discord under applicable law. If you believe a child has provided personal data through the Service, contact us so we can review and address the request.</p>
+
+      <h2>Changes to This Policy</h2>
+      <p>We may update this policy by posting a revised version on this page and changing the “Last updated” date. Continued use after an update means you acknowledge the updated policy.</p>
+
+      <h2>Contact</h2>
+      <p>For privacy questions or requests, contact <code class="highlight">bopbin@gmail.com</code>.</p>
+    </main>
+    <footer class="site-footer"><a href="terms.html">Terms of Service</a></footer>
+  </body>
+</html>

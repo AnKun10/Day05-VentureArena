@@ -4,3 +4,13 @@ node_modules/
 .env
 dist/
 .playwright-mcp/
+.venv/
+__pycache__/
+.pytest_cache/
+playwright-report/
+config.yaml
+output/
+data/discord_crawl/
+edge-profile*/
+*.cookie
+*.egg-info/

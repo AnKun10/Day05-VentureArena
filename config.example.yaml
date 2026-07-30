@@ -1,0 +1,76 @@
+browser:
+  cdp_url: "http://127.0.0.1:9222"
+
+channels:
+  - name: "general"
+    type: "text"
+    url: "PASTE_CHANNEL_URL"
+    mode: "latest_messages"
+    limit: 100
+
+  - name: "questions"
+    type: "forum"
+    url: "PASTE_CHANNEL_URL"
+    mode: "all_posts"
+    collect_all_replies: true
+
+  - name: "sharing"
+    type: "forum"
+    url: "PASTE_CHANNEL_URL"
+    mode: "all_posts"
+    collect_all_replies: true
+
+  - name: "lessons"
+    type: "forum"
+    url: "PASTE_CHANNEL_URL"
+    mode: "all_posts"
+    collect_all_replies: true
+
+  - name: "announcements"
+    type: "text"
+    url: "PASTE_CHANNEL_URL"
+    mode: "all"
+
+  - name: "resources"
+    type: "text"
+    url: "PASTE_CHANNEL_URL"
+    mode: "all"
+
+collection:
+  scroll_pause_seconds: 5
+  max_empty_scrolls: 10
+
+output:
+  directory: "./data/discord_crawl"
+  checkpoint_file: "./data/discord_crawl/checkpoint.json"
+  manifest_file: "./data/discord_crawl/manifest.json"
+
+sources:
+  cohort_4_common_announcements:
+    type: text_channel
+    url: "PASTE_COHORT_4_COMMON_ANNOUNCEMENTS_CHANNEL_URL"
+  cohort_3_common_announcements:
+    type: text_channel
+    url: "PASTE_COHORT_3_COMMON_ANNOUNCEMENTS_CHANNEL_URL"
+
+# Destination-only Discord Bot API rebuild settings.
+discord_bot:
+  destination_guild_id: "${DESTINATION_GUILD_ID}"
+  destination_guild_allowlist:
+    - "${DESTINATION_GUILD_ID}"
+  manifest_path: "data/discord_crawl/manifest.json"
+  state_path: "data/discord_crawl/bot-rebuild-state.json"
+  managed_categories: []
+  managed_channels: []
+  preserve_channels: []
+  role_mapping: {}
+  destination_channel_mappings:
+    cohort_4_common_announcements:
+      destination_channel_id: "PASTE_DESTINATION_COHORT_4_COMMON_ANNOUNCEMENTS_CHANNEL_ID"
+    cohort_3_common_announcements:
+      destination_channel_id: "PASTE_DESTINATION_COHORT_3_COMMON_ANNOUNCEMENTS_CHANNEL_ID"
+
+replay:
+  visual_fidelity: true
+  include_source_metadata_in_content: false
+  allow_native_link_previews: true
