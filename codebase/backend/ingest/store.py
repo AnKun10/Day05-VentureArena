@@ -30,6 +30,16 @@ CREATE TABLE IF NOT EXISTS bookmarks(
   user_id TEXT, message_id TEXT, created_at TEXT,
   PRIMARY KEY(user_id, message_id)
 );
+CREATE TABLE IF NOT EXISTS schedule_events(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  message_id TEXT, type TEXT, title TEXT, date TEXT, start TEXT, end TEXT,
+  cohort TEXT, format TEXT, zoom_url TEXT, host TEXT, location TEXT,
+  session_code TEXT, jump_url TEXT
+);
+CREATE TABLE IF NOT EXISTS schedule_extracted(
+  message_id TEXT PRIMARY KEY, extracted_at TEXT, trace_id TEXT,
+  event_count INTEGER DEFAULT 0
+);
 """
 
 
@@ -45,6 +55,13 @@ class Store:
         cols = [r["name"] for r in self.conn.execute("PRAGMA table_info(posts)")]
         if "embedded_at" not in cols:
             self.conn.execute("ALTER TABLE posts ADD COLUMN embedded_at TEXT")
+        user_cols = [r["name"] for r in self.conn.execute("PRAGMA table_info(users)")]
+        if "cohort" not in user_cols:
+            self.conn.execute("ALTER TABLE users ADD COLUMN cohort TEXT DEFAULT '4'")
+        if "lt_room" not in user_cols:
+            self.conn.execute("ALTER TABLE users ADD COLUMN lt_room TEXT DEFAULT 'D302'")
+        if "lab_room" not in user_cols:
+            self.conn.execute("ALTER TABLE users ADD COLUMN lab_room TEXT DEFAULT 'D305'")
         self.conn.commit()
 
     def close(self) -> None:
@@ -235,3 +252,56 @@ class Store:
         return [dict(r) for r in self.conn.execute(
             "SELECT message_id, hearts, comment_count FROM posts "
             "WHERE embedded_at IS NOT NULL")]
+
+    # ---------- schedule / settings ----------
+
+    def ensure_user(self, user_id: str, name: str | None = None) -> dict:
+        self.conn.execute(
+            "INSERT OR IGNORE INTO users(user_id, name) VALUES(?,?)",
+            (user_id, name or user_id))
+        self.conn.commit()
+        return self.get_user(user_id)
+
+    def get_settings(self, user_id: str) -> dict:
+        r = self.conn.execute(
+            "SELECT cohort, lt_room, lab_room FROM users WHERE user_id=?",
+            (user_id,)).fetchone()
+        if not r:
+            return {"cohort": "4", "lt_room": "D302", "lab_room": "D305"}
+        return dict(r)
+
+    def set_settings(self, user_id: str, cohort: str, lt_room: str, lab_room: str) -> None:
+        self.conn.execute(
+            "UPDATE users SET cohort=?, lt_room=?, lab_room=? WHERE user_id=?",
+            (cohort, lt_room, lab_room, user_id))
+        self.conn.commit()
+
+    def is_schedule_extracted(self, message_id: str) -> bool:
+        r = self.conn.execute(
+            "SELECT 1 FROM schedule_extracted WHERE message_id=?", (message_id,)).fetchone()
+        return r is not None
+
+    def save_schedule_extraction(self, message_id: str, events: list[dict], trace_id: str) -> int:
+        if self.is_schedule_extracted(message_id):
+            return 0
+        for e in events:
+            self.conn.execute(
+                "INSERT INTO schedule_events(message_id, type, title, date, start, end, "
+                "cohort, format, zoom_url, host, location, session_code, jump_url) "
+                "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                (message_id, e.get("type"), e.get("title"), e.get("date"), e.get("start"),
+                 e.get("end"), e.get("cohort"), e.get("format"), e.get("zoom_url"),
+                 e.get("host"), e.get("location"), e.get("session_code"), e.get("jump_url")))
+        self.conn.execute(
+            "INSERT INTO schedule_extracted(message_id, extracted_at, trace_id, event_count) "
+            "VALUES(?,?,?,?)",
+            (message_id, _now(), trace_id, len(events)))
+        self.conn.commit()
+        return len(events)
+
+    def list_schedule_events(self, cohort: str, date_from: str, date_to: str) -> list[dict]:
+        rows = self.conn.execute(
+            "SELECT * FROM schedule_events WHERE date BETWEEN ? AND ? "
+            "AND cohort IN (?, 'all') ORDER BY date, COALESCE(start,'99:99')",
+            (date_from, date_to, cohort)).fetchall()
+        return [dict(r) for r in rows]
