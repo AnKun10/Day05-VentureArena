@@ -1,9 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Bookmark, Flame, Heart, Inbox, MessageSquare, Sparkles } from "lucide-react";
 import { NEWS, NEWS_TAGS, ROLE_COLORS, isHot } from "../data/mock.js";
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import NewsModal, { Avatar, TagBadge, TAG_ICONS } from "../components/NewsModal.jsx";
 
 export default function NewsPage() {
@@ -11,12 +13,75 @@ export default function NewsPage() {
   const [selected, setSelected] = useState(null);
   const [bookmarks, setBookmarks] = useState(() => new Set());
 
+  // Trạng thái phần "Dành cho bạn" (nối backend recommendations)
+  const [users, setUsers] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [recs, setRecs] = useState(null);
+  const [bioDraft, setBioDraft] = useState("");
+  const [bioOpen, setBioOpen] = useState(false);
+
   const toggleBookmark = (id) =>
     setBookmarks((prev) => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
+
+  // Mount: nạp danh sách user demo. Lỗi (backend chưa chạy) → users=null (chế độ offline: giữ Hot trend mock).
+  useEffect(() => {
+    api
+      .users()
+      .then((list) => {
+        setUsers(list);
+        if (list.length) setSelectedUser(list[0].user_id);
+      })
+      .catch(() => setUsers(null));
+  }, []);
+
+  const fetchRecs = (uid) => {
+    if (uid == null) return;
+    api
+      .recommendations(uid, 6)
+      .then((list) => setRecs(list))
+      .catch(() => setRecs(null));
+  };
+
+  // Đổi user → nạp lại gợi ý
+  useEffect(() => {
+    if (selectedUser != null) fetchRecs(selectedUser);
+  }, [selectedUser]);
+
+  const currentUser = users?.find((u) => u.user_id === selectedUser) ?? null;
+
+  const openBio = () => {
+    setBioDraft(currentUser?.bio ?? "");
+    setBioOpen(true);
+  };
+
+  const saveBio = () => {
+    if (selectedUser == null) return;
+    api
+      .setBio(selectedUser, bioDraft)
+      .then(() => {
+        setUsers((prev) =>
+          prev ? prev.map((u) => (u.user_id === selectedUser ? { ...u, bio: bioDraft } : u)) : prev
+        );
+        setBioOpen(false);
+        fetchRecs(selectedUser);
+      })
+      .catch(() => {});
+  };
+
+  // Rec card chỉ mở modal nếu tìm được bài mock cùng title (dữ liệu API chưa có content/comments đầy đủ)
+  const findMockByTitle = (title) => NEWS.find((n) => n.title === title);
+
+  const handleRecBookmark = (messageId) => {
+    if (selectedUser == null) return;
+    api
+      .setBookmark(selectedUser, messageId, true)
+      .then(() => fetchRecs(selectedUser))
+      .catch(() => {});
+  };
 
   const hot = useMemo(
     () =>
@@ -41,50 +106,128 @@ export default function NewsPage() {
         </p>
       </div>
 
-      {/* Hot trend */}
+      {/* Hot trend (offline) / Dành cho bạn (online, nối recommendations API) */}
       <div className="mb-6">
-        <h2 className="mb-2.5 flex items-center gap-1.5 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-          <Flame className="size-3.5 text-orange-500" /> Hot trend
-        </h2>
-        <div className="grid gap-2.5 sm:grid-cols-3">
-          {hot.map((n) => {
-            const roleColor = ROLE_COLORS[n.role] ?? "#64748b";
-            return (
-              <Card
-                key={n.id}
-                size="sm"
-                className="cursor-pointer gap-2 transition-shadow hover:shadow-md"
-                onClick={() => setSelected(n)}
+        {users !== null ? (
+          <>
+            <div className="mb-2.5 flex items-center gap-2">
+              <h2 className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                <Sparkles className="size-3.5 text-primary" /> Dành cho bạn
+              </h2>
+              <select
+                className="h-8 rounded-lg border bg-background px-2 text-sm"
+                value={selectedUser ?? ""}
+                onChange={(e) => setSelectedUser(Number(e.target.value))}
               >
-                <div className="flex items-center gap-1.5 px-3">
-                  <TagBadge tag={n.tags[0]} />
-                  <Flame className="ml-auto size-3.5 shrink-0 text-orange-500" />
-                  <BookmarkButton
-                    active={bookmarks.has(n.id)}
-                    onToggle={() => toggleBookmark(n.id)}
-                  />
-                </div>
-                <div className="line-clamp-2 min-h-10 px-3 text-sm leading-snug font-semibold">
-                  {n.title}
-                </div>
-                <div className="flex items-center gap-1.5 px-3">
-                  <Avatar name={n.author} role={n.role} className="size-4.5 text-[9px]" />
-                  <span
-                    className="truncate text-xs font-medium"
-                    style={{ color: roleColor }}
+                {users.map((u) => (
+                  <option key={u.user_id} value={u.user_id}>
+                    {u.name}
+                  </option>
+                ))}
+              </select>
+              <Button variant="outline" size="sm" onClick={openBio}>
+                Sửa bio
+              </Button>
+            </div>
+            <div className="grid gap-2.5 sm:grid-cols-3">
+              {(recs ?? []).slice(0, 3).map((r) => {
+                const roleColor = ROLE_COLORS[r.author_role] ?? "#64748b";
+                const mockMatch = findMockByTitle(r.title);
+                return (
+                  <Card
+                    key={r.message_id}
+                    size="sm"
+                    className={cn(
+                      "gap-2 transition-shadow hover:shadow-md",
+                      mockMatch && "cursor-pointer"
+                    )}
+                    onClick={mockMatch ? () => setSelected(mockMatch) : undefined}
                   >
-                    {n.author}
-                  </span>
-                </div>
-                <div className="mt-auto flex items-center gap-3 px-3 text-xs text-muted-foreground">
-                  <Meta icon={Heart} value={n.hearts} />
-                  <Meta icon={MessageSquare} value={n.comments.length} />
-                  <span className="ml-auto truncate">{n.time}</span>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
+                    <div className="flex items-center gap-1.5 px-3">
+                      <TagBadge tag={r.tags[0]} />
+                      <div className="ml-auto">
+                        <BookmarkButton
+                          active={false}
+                          onToggle={() => handleRecBookmark(r.message_id)}
+                        />
+                      </div>
+                    </div>
+                    <div className="line-clamp-2 min-h-10 px-3 text-sm leading-snug font-semibold">
+                      {r.title}
+                    </div>
+                    <div className="flex items-center gap-1.5 px-3">
+                      <Avatar name={r.author} role={r.author_role} className="size-4.5 text-[9px]" />
+                      <span
+                        className="truncate text-xs font-medium"
+                        style={{ color: roleColor }}
+                      >
+                        {r.author}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 px-3 text-xs text-muted-foreground">
+                      <Meta icon={Heart} value={r.hearts} />
+                      <Meta icon={MessageSquare} value={r.comment_count} />
+                    </div>
+                    <div className="mt-auto px-3 text-[10px] text-muted-foreground">
+                      ✨ {Math.round(r.parts.sim * 100)}% match · 🔥{" "}
+                      {r.hearts + r.comment_count} · 🕐 {Math.round(r.parts.rec * 100)}% mới
+                    </div>
+                  </Card>
+                );
+              })}
+              {recs !== null && recs.length === 0 && (
+                <p className="col-span-full text-sm text-muted-foreground">
+                  Chưa có gợi ý nào — hãy thử đánh dấu vài bài viết bạn quan tâm.
+                </p>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            <h2 className="mb-2.5 flex items-center gap-1.5 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+              <Flame className="size-3.5 text-orange-500" /> Hot trend
+            </h2>
+            <div className="grid gap-2.5 sm:grid-cols-3">
+              {hot.map((n) => {
+                const roleColor = ROLE_COLORS[n.role] ?? "#64748b";
+                return (
+                  <Card
+                    key={n.id}
+                    size="sm"
+                    className="cursor-pointer gap-2 transition-shadow hover:shadow-md"
+                    onClick={() => setSelected(n)}
+                  >
+                    <div className="flex items-center gap-1.5 px-3">
+                      <TagBadge tag={n.tags[0]} />
+                      <Flame className="ml-auto size-3.5 shrink-0 text-orange-500" />
+                      <BookmarkButton
+                        active={bookmarks.has(n.id)}
+                        onToggle={() => toggleBookmark(n.id)}
+                      />
+                    </div>
+                    <div className="line-clamp-2 min-h-10 px-3 text-sm leading-snug font-semibold">
+                      {n.title}
+                    </div>
+                    <div className="flex items-center gap-1.5 px-3">
+                      <Avatar name={n.author} role={n.role} className="size-4.5 text-[9px]" />
+                      <span
+                        className="truncate text-xs font-medium"
+                        style={{ color: roleColor }}
+                      >
+                        {n.author}
+                      </span>
+                    </div>
+                    <div className="mt-auto flex items-center gap-3 px-3 text-xs text-muted-foreground">
+                      <Meta icon={Heart} value={n.hearts} />
+                      <Meta icon={MessageSquare} value={n.comments.length} />
+                      <span className="ml-auto truncate">{n.time}</span>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Filter theo tag (taxonomy 10 tag — AI gắn, 1 bài có thể nhiều tag) */}
@@ -122,6 +265,23 @@ export default function NewsPage() {
       </div>
 
       {selected && <NewsModal news={selected} onClose={() => setSelected(null)} />}
+
+      <Dialog open={bioOpen} onOpenChange={setBioOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Sửa bio — {currentUser?.name}</DialogTitle>
+          </DialogHeader>
+          <textarea
+            className="min-h-28 w-full rounded-lg border bg-background p-2 text-sm"
+            value={bioDraft}
+            onChange={(e) => setBioDraft(e.target.value)}
+            placeholder="Mô tả sở thích, mối quan tâm của bạn…"
+          />
+          <Button size="sm" onClick={saveBio}>
+            Lưu
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

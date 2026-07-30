@@ -1,0 +1,22 @@
+const API_BASE = "http://localhost:8000";
+
+async function j(url, opts) {
+  const res = await fetch(url, opts);
+  if (!res.ok) throw new Error(`${res.status}`);
+  return res.json();
+}
+
+export const api = {
+  users: () => j(`${API_BASE}/api/users`),
+  setBio: (id, bio) =>
+    j(`${API_BASE}/api/users/${id}/bio`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bio }),
+    }),
+  bookmarks: (id) => j(`${API_BASE}/api/users/${id}/bookmarks`),
+  setBookmark: (id, mid, on) =>
+    j(`${API_BASE}/api/users/${id}/bookmarks/${mid}`, { method: on ? "PUT" : "DELETE" }),
+  recommendations: (id, k = 6) =>
+    j(`${API_BASE}/api/recommendations?user_id=${id}&k=${k}`),
+};
