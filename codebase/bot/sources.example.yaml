@@ -1,0 +1,12 @@
+# Copy to sources.yaml, then replace each ID with a channel in the test server.
+# The bot reads only these configured channels; it never discovers other channels.
+sources:
+  - group: classes
+    channel_ids: []
+  - group: forum
+    channel_ids: []
+  - group: resources
+    channel_ids: []
+  - group: announcements
+    channel_ids: []
+message_limit: 100

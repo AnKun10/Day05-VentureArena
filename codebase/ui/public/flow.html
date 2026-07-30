@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#0e1015; font-family:"Segoe UI",system-ui,sans-serif; color:#e5e7eb; }
+  #canvas { position:relative; width:1660px; height:980px; background:#0e1015; overflow:hidden; }
+  .box { position:absolute; background:#151823; border:1px solid #2a3040; border-radius:14px; padding:14px 16px; }
+  .box h3 { font-size:13.5px; font-weight:700; color:#fff; margin-bottom:8px; display:flex; align-items:center; gap:7px; }
+  .box .sub { font-size:10.5px; color:#8b93a7; margin-top:-6px; margin-bottom:8px; }
+  .item { font-size:11.5px; color:#c3c9d6; padding:4.5px 8px; background:#1b1f2c; border-radius:7px; margin-bottom:5px; line-height:1.45; }
+  .item b { color:#e8eaf1; }
+  .band { position:absolute; font-size:12.5px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:#8891f2; }
+  .band span { color:#4a5065; font-weight:600; text-transform:none; letter-spacing:0; }
+  .out { position:absolute; border-radius:12px; padding:11px 14px; font-size:12px; line-height:1.5; background:#151823; }
+  .out b { font-size:12.5px; }
+  svg.wires { position:absolute; inset:0; pointer-events:none; }
+  .lbl { font-size:10px; fill:#6b7280; }
+  .tag { display:inline-block; font-size:9.5px; font-weight:700; padding:1.5px 7px; border-radius:99px; margin-left:6px; vertical-align:1px; }
+</style>
+</head>
+<body>
+<div id="canvas">
+  <!-- Header -->
+  <div style="position:absolute;left:44px;top:26px;">
+    <div style="font-size:21px;font-weight:800;color:#fff;">🤖 Companion — Luồng chính</div>
+    <div style="font-size:11.5px;color:#7d8496;margin-top:3px;">Personalized Discord Companion Agent · tổng hợp tin — lịch học &amp; tài liệu — hỏi đáp có trích nguồn</div>
+  </div>
+
+  <!-- ============ BAND 1 ============ -->
+  <div class="band" style="left:44px;top:92px;">① Luồng dữ liệu <span>— ingestion &amp; hiển thị</span></div>
+
+  <div class="box" style="left:44px;top:120px;width:314px;height:238px;">
+    <h3>📡 Kênh Discord nguồn</h3>
+    <div class="item">💬 <b>Kênh chat lớp</b> — lý-thuyết · Lab-D305…</div>
+    <div class="item">🙋 <b>Forum</b> — hỏi-đáp · bài-học · chia-sẻ</div>
+    <div class="item">🗂 <b>#tài-nguyên</b> — slide · record · ngân hàng đề</div>
+    <div class="item">📣 <b>#thông-báo</b> — lịch WS · mentor duty · office hour</div>
+  </div>
+
+  <div class="box" style="left:438px;top:133px;width:302px;height:212px;">
+    <h3>⚙️ Ingestion Worker</h3>
+    <div class="item">🏷 <b>Agent phân loại</b> theo taxonomy loại tin <i>(nhóm tự thiết kế)</i></div>
+    <div class="item">🔗 <b>Session Linker</b> — gắn slide/record vào mã buổi (WS-2, LT-11…)</div>
+    <div class="item">📊 Signal: tag forum · role · link · reaction</div>
+  </div>
+
+  <div class="box" style="left:820px;top:120px;width:306px;height:238px;padding:12px;">
+    <h3 style="margin-bottom:6px;">🗄 Lưu trữ</h3>
+    <div style="background:#1b1f2c;border-radius:9px;padding:9px 11px;margin-bottom:7px;">
+      <div style="font-size:12px;font-weight:700;color:#e8eaf1;">SQLite</div>
+      <div style="font-size:10.5px;color:#8b93a7;line-height:1.5;">posts đã phân loại · hàng đợi câu hỏi tồn · trace log AI</div>
+    </div>
+    <div style="background:#1b1f2c;border-radius:9px;padding:9px 11px;">
+      <div style="font-size:12px;font-weight:700;color:#e8eaf1;">Knowledge Base → Chroma</div>
+      <div style="font-size:10.5px;color:#8b93a7;line-height:1.5;">schedule.yaml (mã buổi) · FAQ theo loại buổi · thông báo chính thức (jump-link + ngày đăng)</div>
+    </div>
+  </div>
+
+  <div class="box" style="left:1206px;top:120px;width:410px;height:238px;">
+    <h3>🖥 Web UI thống nhất <span class="tag" style="background:#5865f233;color:#aab4ff;">bot gửi link qua /hub</span></h3>
+    <div class="item">📅 <b>Lịch học</b> — calendar tuần · click block → chi tiết buổi + Zoom/slide/record + FAQ</div>
+    <div class="item">📚 <b>Tài nguyên</b> — kho slide/record gắn theo mã buổi</div>
+    <div class="item">📰 <b>Bản tin</b> — phân loại theo loại tin · 🔥 hot trend</div>
+    <div class="item" style="opacity:.55;">💬 Hỏi đáp trên UI <i>(sắp có)</i></div>
+  </div>
+
+  <!-- ============ BAND 2 ============ -->
+  <div class="band" style="left:44px;top:408px;">② Luồng hỏi đáp <span>— quyết định AI trung tâm (được chấm điểm)</span></div>
+
+  <div class="box" style="left:44px;top:478px;width:158px;height:108px;text-align:center;">
+    <div style="font-size:30px;margin-top:2px;">🎓</div>
+    <div style="font-size:13px;font-weight:700;color:#fff;margin-top:4px;">Học viên</div>
+    <div style="font-size:10.5px;color:#8b93a7;">hỏi lịch · tài liệu · logistics</div>
+  </div>
+
+  <div class="box" style="left:282px;top:478px;width:246px;height:108px;">
+    <h3>Điểm chạm</h3>
+    <div class="item">🤖 Discord bot — <b>/ask</b></div>
+    <div class="item" style="margin-bottom:0;">🖥 Chat trên Web UI</div>
+  </div>
+
+  <div class="box" style="left:608px;top:468px;width:302px;height:128px;">
+    <h3>FastAPI · RAG Core</h3>
+    <div class="item">🔍 Retrieve top-k từ Knowledge Base</div>
+    <div class="item" style="margin-bottom:0;">🧠 OpenAI <b>gpt-5-mini</b> → câu trả lời + citation + confidence</div>
+  </div>
+
+  <div class="box" style="left:988px;top:472px;width:182px;height:120px;border:1.5px solid #5865f2;background:#171a2e;text-align:center;">
+    <div style="font-size:26px;margin-top:14px;">🧠</div>
+    <div style="font-size:13.5px;font-weight:800;color:#aab4ff;margin-top:5px;">Quyết định AI</div>
+    <div style="font-size:10px;color:#6b7280;">3 hành vi</div>
+  </div>
+
+  <div class="out" style="left:1250px;top:428px;width:366px;height:78px;border:1px solid #22c55e55;">
+    <b style="color:#4ade80;">✅ Trả lời + trích nguồn</b><br/>
+    <span style="color:#9aa3b5;">citation bấm được [nguồn] + ngày cập nhật — không bao giờ bịa</span>
+  </div>
+  <div class="out" style="left:1250px;top:528px;width:366px;height:78px;border:1px solid #3b82f655;">
+    <b style="color:#60a5fa;">❓ Mơ hồ → hỏi lại 1 lần</b><br/>
+    <span style="color:#9aa3b5;">"Ý bạn là buổi Lab 3 hay Workshop 2?"</span>
+  </div>
+  <div class="out" style="left:1250px;top:628px;width:366px;height:78px;border:1px solid #ef444455;">
+    <b style="color:#f87171;">🚫 Thiếu căn cứ / ngoài phạm vi → từ chối</b><br/>
+    <span style="color:#9aa3b5;">báo rõ "đã ghi nhận, TA sẽ trả lời" → vào hàng đợi</span>
+  </div>
+
+  <!-- TA escalation row -->
+  <div class="box" style="left:608px;top:790px;width:302px;height:96px;">
+    <h3>📥 Hàng đợi câu hỏi tồn</h3>
+    <div style="font-size:11px;color:#9aa3b5;line-height:1.5;">câu bị từ chối · bị báo sai · post forum "Open" lâu chưa Solved — gom theo lớp</div>
+  </div>
+  <div class="box" style="left:988px;top:790px;width:250px;height:96px;">
+    <h3>📨 TA Digest Builder</h3>
+    <div style="font-size:11px;color:#9aa3b5;line-height:1.5;">bản tổng hợp theo lớp — định kỳ hoặc lệnh <b style="color:#c3c9d6;">/ta-digest</b></div>
+  </div>
+  <div class="box" style="left:1316px;top:790px;width:300px;height:96px;">
+    <h3>🧑‍🏫 TA phụ trách lớp</h3>
+    <div style="font-size:11px;color:#9aa3b5;line-height:1.5;">tài khoản riêng theo lớp Lab/LT (<b style="color:#c3c9d6;">ta_roster.yaml</b>) → trả lời học viên</div>
+  </div>
+
+  <!-- Footer -->
+  <div style="position:absolute;left:44px;top:922px;font-size:11px;color:#5a6172;">
+    ⭐ Chấm điểm trên bộ ba <b style="color:#8b93a7;">answer / clarify / refuse</b> — golden set ≥20 case · mọi lời gọi OpenAI được log trace &nbsp;·&nbsp; Demo UI: <b style="color:#8b93a7;">codebase/ui</b> · Kế hoạch: <b style="color:#8b93a7;">MASTERPLAN.md</b>
+  </div>
+
+  <!-- Wires -->
+  <svg class="wires" width="1660" height="980" viewBox="0 0 1660 980">
+    <defs>
+      <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#5865f2"/>
+      </marker>
+      <marker id="arg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#4ade80"/>
+      </marker>
+      <marker id="arb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#60a5fa"/>
+      </marker>
+      <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#f87171"/>
+      </marker>
+    </defs>
+    <!-- band 1 -->
+    <line x1="358" y1="239" x2="436" y2="239" stroke="#5865f2" stroke-width="2" marker-end="url(#ar)"/>
+    <line x1="740" y1="239" x2="818" y2="239" stroke="#5865f2" stroke-width="2" marker-end="url(#ar)"/>
+    <line x1="1126" y1="239" x2="1204" y2="239" stroke="#5865f2" stroke-width="2" marker-end="url(#ar)"/>
+    <!-- stores -> RAG (retrieve) -->
+    <path d="M 940 358 C 900 420, 830 430, 790 466" fill="none" stroke="#5865f2" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+    <text class="lbl" x="880" y="424">retrieve</text>
+    <!-- band 2 -->
+    <line x1="202" y1="532" x2="280" y2="532" stroke="#5865f2" stroke-width="2" marker-end="url(#ar)"/>
+    <line x1="528" y1="532" x2="606" y2="532" stroke="#5865f2" stroke-width="2" marker-end="url(#ar)"/>
+    <line x1="910" y1="532" x2="986" y2="532" stroke="#5865f2" stroke-width="2" marker-end="url(#ar)"/>
+    <!-- decision -> outcomes -->
+    <line x1="1170" y1="510" x2="1248" y2="470" stroke="#4ade80" stroke-width="2" marker-end="url(#arg)"/>
+    <line x1="1170" y1="532" x2="1248" y2="566" stroke="#60a5fa" stroke-width="2" marker-end="url(#arb)"/>
+    <line x1="1170" y1="556" x2="1248" y2="664" stroke="#f87171" stroke-width="2" marker-end="url(#arr)"/>
+    <!-- refuse -> queue -->
+    <path d="M 1250 692 C 1080 720, 980 760, 914 806" fill="none" stroke="#f87171" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arr)"/>
+    <!-- queue -> digest -> TA -->
+    <line x1="910" y1="838" x2="986" y2="838" stroke="#5865f2" stroke-width="2" marker-end="url(#ar)"/>
+    <line x1="1238" y1="838" x2="1314" y2="838" stroke="#5865f2" stroke-width="2" marker-end="url(#ar)"/>
+  </svg>
+</div>
+</body>
+</html>
