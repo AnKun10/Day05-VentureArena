@@ -1,7 +1,7 @@
 import argparse
 import time
 
-from .agents import enrich_post
+from .agents import enrich_post, extract_schedule
 from .config import Config
 from .linker import detect_kind, detect_session
 from .sources import SeedSource
@@ -14,15 +14,28 @@ def _fallback_summary(content: str) -> str:
 
 
 def run_once(store: Store, source, cfg: Config, limit: int = 20,
-             force: bool = False, runner=None, vectors=None, embed_fn=None) -> dict:
+             force: bool = False, runner=None, vectors=None, embed_fn=None,
+             schedule_runner=None) -> dict:
     since = {ch: store.get_checkpoint(ch)
              for ch in ("chia-se", "bai-hoc", "tai-nguyen")}
     posts = source.fetch(since=since)
+    schedule_events = 0
     for p in posts:
         if p.channel == "tai-nguyen":
             store.add_resource(p.message_id, detect_kind(p.title), p.title,
                                detect_session(p.title), p.author, p.jump_url,
                                p.created_at)
+        elif p.channel.startswith("thong-bao"):
+            if not store.is_schedule_extracted(p.message_id):
+                try:
+                    post = {"message_id": p.message_id, "title": p.title,
+                            "content": p.content, "channel": p.channel,
+                            "created_at": p.created_at, "jump_url": p.jump_url}
+                    extraction, trace_id = extract_schedule(post, cfg, runner=schedule_runner)
+                    schedule_events += store.save_schedule_extraction(
+                        p.message_id, [e.model_dump() for e in extraction.events], trace_id)
+                except Exception as exc:  # extract lỗi: không mark, thử lại lượt sau
+                    print(f"[schedule-fail] {p.message_id}: {exc}")
         else:
             store.upsert_post(p)
         store.set_checkpoint(p.channel, p.message_id)
@@ -60,7 +73,7 @@ def run_once(store: Store, source, cfg: Config, limit: int = 20,
             vectors.update_news_payload(m["message_id"], m["hearts"], m["comment_count"])
 
     return {"fetched": len(posts), "enriched": enriched, "failed": failed,
-            "embedded": embedded}
+            "embedded": embedded, "schedule_events": schedule_events}
 
 
 def main():

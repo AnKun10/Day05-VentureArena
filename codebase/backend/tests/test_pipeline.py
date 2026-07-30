@@ -98,3 +98,26 @@ def test_run_once_without_vectors_keeps_old_behavior(tmp_path, monkeypatch):
     store = Store(str(tmp_path / "t.db"))
     stats = run_once(store, SeedSource(SEED), Config(), runner=fake_runner)
     assert stats["embedded"] == 0
+
+
+def test_run_once_extracts_announcements(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    from ingest.agents import ScheduleEvent, ScheduleExtraction
+    from ingest.models import RawPost
+
+    class AnnounceSource:
+        def fetch(self, since):
+            return [RawPost(message_id="3001", channel="thong-bao:4", title="TB",
+                            content="Workshop tối nay 20:00", author="BTC",
+                            created_at="2026-07-30T07:00:00+00:00")]
+
+    fake = ScheduleExtraction(events=[ScheduleEvent(
+        type="WS", title="WS3", date="2026-07-30", start="20:00", cohort="4")])
+    store = Store(str(tmp_path / "t.db"))
+    stats = run_once(store, AnnounceSource(), Config(), runner=fake_runner,
+                     schedule_runner=lambda t: fake)
+    assert stats["schedule_events"] == 1
+    assert store.get_news("3001") is None                       # không vào posts
+    stats2 = run_once(store, AnnounceSource(), Config(), runner=fake_runner,
+                      schedule_runner=lambda t: fake)
+    assert stats2["schedule_events"] == 0                       # extract-once (checkpoint + mark)
