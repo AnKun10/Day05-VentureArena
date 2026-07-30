@@ -22,6 +22,14 @@ CREATE TABLE IF NOT EXISTS resources(
   author TEXT, url TEXT, created_at TEXT
 );
 CREATE TABLE IF NOT EXISTS ingest_state(key TEXT PRIMARY KEY, value TEXT);
+CREATE TABLE IF NOT EXISTS users(
+  user_id TEXT PRIMARY KEY, name TEXT, bio TEXT DEFAULT '', bio_source TEXT DEFAULT 'manual',
+  bio_hash TEXT, interest_summary TEXT, interest_tags TEXT
+);
+CREATE TABLE IF NOT EXISTS bookmarks(
+  user_id TEXT, message_id TEXT, created_at TEXT,
+  PRIMARY KEY(user_id, message_id)
+);
 """
 
 
@@ -34,6 +42,9 @@ class Store:
         self.conn = sqlite3.connect(db_path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
         self.conn.executescript(SCHEMA)
+        cols = [r["name"] for r in self.conn.execute("PRAGMA table_info(posts)")]
+        if "embedded_at" not in cols:
+            self.conn.execute("ALTER TABLE posts ADD COLUMN embedded_at TEXT")
         self.conn.commit()
 
     def upsert_post(self, p: RawPost) -> None:
@@ -135,3 +146,89 @@ class Store:
     def list_resources(self) -> list[dict]:
         return [dict(r) for r in self.conn.execute(
             "SELECT * FROM resources ORDER BY created_at DESC").fetchall()]
+
+    # ---------- recsys: users / bookmarks / embedding flags ----------
+
+    def upsert_user(self, user_id: str, name: str, bio: str = "",
+                    bio_source: str = "manual") -> None:
+        self.conn.execute(
+            "INSERT OR IGNORE INTO users(user_id, name, bio, bio_source) VALUES(?,?,?,?)",
+            (user_id, name, bio, bio_source))
+        self.conn.commit()
+
+    def _user_dict(self, r) -> dict:
+        d = dict(r)
+        d["interest_tags"] = json.loads(d["interest_tags"]) if d["interest_tags"] else []
+        return d
+
+    def list_users(self) -> list[dict]:
+        return [self._user_dict(r) for r in
+                self.conn.execute("SELECT * FROM users ORDER BY user_id")]
+
+    def get_user(self, user_id: str) -> dict | None:
+        r = self.conn.execute("SELECT * FROM users WHERE user_id=?", (user_id,)).fetchone()
+        return self._user_dict(r) if r else None
+
+    def set_bio(self, user_id: str, bio: str, source: str = "manual") -> None:
+        self.conn.execute("UPDATE users SET bio=?, bio_source=? WHERE user_id=?",
+                          (bio, source, user_id))
+        self.conn.commit()
+
+    def toggle_bookmark(self, user_id: str, message_id: str) -> bool:
+        cur = self.conn.execute(
+            "DELETE FROM bookmarks WHERE user_id=? AND message_id=?", (user_id, message_id))
+        if cur.rowcount == 0:
+            self.conn.execute(
+                "INSERT INTO bookmarks(user_id, message_id, created_at) VALUES(?,?,?)",
+                (user_id, message_id, _now()))
+            self.conn.commit()
+            return True
+        self.conn.commit()
+        return False
+
+    def list_bookmarks(self, user_id: str) -> list[str]:
+        return [r["message_id"] for r in self.conn.execute(
+            "SELECT message_id FROM bookmarks WHERE user_id=? ORDER BY created_at DESC",
+            (user_id,))]
+
+    def bookmarked_news(self, user_id: str, limit: int = 10) -> list[dict]:
+        rows = self.conn.execute(
+            "SELECT p.message_id, p.title, p.summary, p.tags FROM bookmarks b "
+            "JOIN posts p ON p.message_id = b.message_id WHERE b.user_id=? "
+            "ORDER BY b.created_at DESC LIMIT ?", (user_id, limit)).fetchall()
+        out = []
+        for r in rows:
+            d = dict(r)
+            d["tags"] = json.loads(d["tags"]) if d["tags"] else []
+            out.append(d)
+        return out
+
+    def save_profile(self, user_id: str, bio_hash: str, interest_summary: str,
+                     interest_tags: list[str]) -> None:
+        self.conn.execute(
+            "UPDATE users SET bio_hash=?, interest_summary=?, interest_tags=? WHERE user_id=?",
+            (bio_hash, interest_summary, json.dumps(interest_tags), user_id))
+        self.conn.commit()
+
+    def pending_embedding(self, limit: int = 100, force: bool = False) -> list[dict]:
+        where = ("WHERE enriched_at IS NOT NULL" if force
+                 else "WHERE enriched_at IS NOT NULL AND embedded_at IS NULL")
+        rows = self.conn.execute(
+            f"SELECT message_id, title, summary, tags, created_at, hearts, comment_count "
+            f"FROM posts {where} ORDER BY created_at DESC LIMIT ?", (limit,)).fetchall()
+        out = []
+        for r in rows:
+            d = dict(r)
+            d["tags"] = json.loads(d["tags"]) if d["tags"] else []
+            out.append(d)
+        return out
+
+    def set_embedded(self, message_id: str) -> None:
+        self.conn.execute("UPDATE posts SET embedded_at=? WHERE message_id=?",
+                          (_now(), message_id))
+        self.conn.commit()
+
+    def embedded_news_meta(self) -> list[dict]:
+        return [dict(r) for r in self.conn.execute(
+            "SELECT message_id, hearts, comment_count FROM posts "
+            "WHERE embedded_at IS NOT NULL")]
