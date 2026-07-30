@@ -1,0 +1,5 @@
+[
+  {"user_id": "an", "name": "An (demo)", "bio": "Mê computer vision và xe tự hành, đang tìm hiểu BEV, chọn dataset cho bài toán detection."},
+  {"user_id": "vy", "name": "Vy (demo)", "bio": "Thích thiết kế sản phẩm và UI/UX, hay đọc về design system, shadcn, cách làm demo đẹp nhanh."},
+  {"user_id": "long", "name": "Long (demo)", "bio": "Quan tâm backend và hạ tầng agent: tool calling, MCP, tối ưu chi phí gọi API, prompt caching."}
+]
