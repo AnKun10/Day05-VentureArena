@@ -22,6 +22,11 @@ from .discord_source import map_role
 
 _FORUM_MAP = {"sharing": "chia-se", "lessons": "bai-hoc"}
 _RESOURCE_SOURCE = "resources"
+_ANNOUNCE_MAP = {
+    "announcements": "thong-bao:all",
+    "cohort_3_common_announcements": "thong-bao:3",
+    "cohort_4_common_announcements": "thong-bao:4",
+}
 _FALLBACK_AUTHOR = "(ẩn danh)"
 FALLBACK_TS = "2026-07-31T00:00:00+00:00"
 
@@ -100,6 +105,12 @@ class ManifestSource:
                     raw = self._resource_post(message)
                     if raw and int(raw.message_id) > since.get("tai-nguyen", 0):
                         posts.append(raw)
+            elif name in _ANNOUNCE_MAP:
+                target = _ANNOUNCE_MAP[name]
+                for message in channel.get("messages") or []:
+                    raw = self._announce_post(message, target)
+                    if raw and int(raw.message_id) > since.get(target, 0):
+                        posts.append(raw)
         return posts
 
     @staticmethod
@@ -153,6 +164,29 @@ class ManifestSource:
         return RawPost(
             message_id=str(message["id"]),
             channel="tai-nguyen",
+            title=title[:120],
+            content=content,
+            author=author,
+            author_role=map_role([author]),
+            jump_url=message.get("jump_url") or "",
+            created_at=_ts(message.get("created_at")) if message.get("created_at")
+            else (header_ts or FALLBACK_TS),
+            hearts=_hearts(message),
+        )
+
+    @staticmethod
+    def _announce_post(message: dict, channel: str) -> RawPost | None:
+        raw_content = (message.get("content") or "").strip()
+        if not raw_content or "Chào mừng bạn đến với #" in raw_content[:80]:
+            return None
+        header_author, header_ts, content = split_header(raw_content)
+        if not content:
+            return None
+        title = next((line.strip() for line in content.splitlines() if line.strip()), content)
+        author = header_author or _author(message)
+        return RawPost(
+            message_id=str(message["id"]),
+            channel=channel,
             title=title[:120],
             content=content,
             author=author,

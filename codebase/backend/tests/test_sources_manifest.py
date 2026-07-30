@@ -85,6 +85,14 @@ MANIFEST = {
         {"source_name": "general", "type": "text", "messages": [{"id": "2030", "content": "hello"}]},
         {"source_name": "questions", "type": "forum", "forum_posts": [
             {"id": "2040", "title": "Hỏi cái này?", "starter_message": {"content": "?"}}]},
+        {
+            "source_name": "cohort_4_common_announcements",
+            "type": "text",
+            "messages": [
+                {"id": "2050", "content": "Vonhatcuong—14:15 23/7/26lúc 14:15 Thứ Năm, 23 tháng 7, 2026THÔNG BÁO LỊCH WORKSHOP 3\nThời gian: 20:00 tối nay",
+                 "jump_url": "https://discord.com/x/2050", "created_at": "2026-07-23T07:15:00.000Z"},
+            ],
+        },
     ],
 }
 
@@ -100,7 +108,7 @@ def test_maps_channels_and_skips_unrelated(tmp_path):
     by_channel = {}
     for p in posts:
         by_channel.setdefault(p.channel, []).append(p)
-    assert set(by_channel) == {"chia-se", "bai-hoc", "tai-nguyen"}   # general/questions bị bỏ
+    assert set(by_channel) == {"chia-se", "bai-hoc", "tai-nguyen", "thong-bao:4"}   # general/questions bị bỏ
     assert [p.message_id for p in by_channel["chia-se"]] == ["2001"]  # post rỗng 2004 bị bỏ
     assert [p.message_id for p in by_channel["tai-nguyen"]] == ["2021"]  # welcome 2020 bị bỏ
 
@@ -125,6 +133,23 @@ def test_resource_title_is_first_line_with_fallback_ts(tmp_path):
 
 def test_respects_checkpoint(tmp_path):
     src = ManifestSource(write_manifest(tmp_path))
-    posts = src.fetch(since={"chia-se": 2001, "bai-hoc": 0, "tai-nguyen": 3000})
+    posts = src.fetch(since={"chia-se": 2001, "bai-hoc": 0, "tai-nguyen": 3000, "thong-bao:4": 3000})
     ids = {p.message_id for p in posts}
     assert ids == {"2010"}                                            # chia-se & tai-nguyen đã qua checkpoint
+
+
+def test_announcement_channels_mapped_with_cohort_suffix(tmp_path):
+    posts = ManifestSource(write_manifest(tmp_path)).fetch(since={})
+    ann = [p for p in posts if p.channel.startswith("thong-bao")]
+    assert len(ann) == 1
+    p = ann[0]
+    assert p.channel == "thong-bao:4"
+    assert p.author == "Vonhatcuong"
+    assert p.title.startswith("THÔNG BÁO LỊCH WORKSHOP 3")
+    assert p.created_at == "2026-07-23T07:15:00.000+00:00"
+
+
+def test_announcement_respects_checkpoint(tmp_path):
+    src = ManifestSource(write_manifest(tmp_path))
+    posts = src.fetch(since={"thong-bao:4": 3000})
+    assert not any(p.channel == "thong-bao:4" for p in posts)
