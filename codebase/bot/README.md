@@ -12,6 +12,11 @@ xem kiến trúc tổng thể + phân công ở `MASTERPLAN.md` §3/§6.
   `/api/ask` của Nghĩa (backend RAG Core thật) ở CP3. Khi swap: chỉ sửa `decision.py`, cogs không đổi.
 - ✅ Ingestion worker (`ingestion/listener.py`): lắng nghe 4 nhóm kênh (chat lớp / forum / `#tài-nguyên` /
   `#thông-báo`), lưu metadata vào SQLite, Session Linker tự gắn mã buổi cho bài `#tài-nguyên`.
+- ⚠️ **Cấu trúc thật khác giả định ban đầu** (xem ảnh chụp server BTC lúc build phần này): `lý-thuyết` VÀ
+  `thực-hành-lab` cũng là **kênh Forum**, không phải kênh chat thường — mỗi phòng lớp (`Lab-D305`,
+  `Lec-D302`...) là 1 **thread** riêng bên trong, giống hệt cách `hỏi-đáp`/`chia-sẻ`/`bài-học` vận hành.
+  Đã sửa `class_code_for_channel()` soi trên tên thread thay vì tên forum cha (bug thật đã bắt được,
+  xem `tests/test_ingestion.py`).
 - ⏳ **Chưa làm**: nối bot vào server Discord thật/test thật (cần token + mời bot); phân loại tin theo
   taxonomy chính thức (chờ An chốt — cột `category` đang để trống, cắm qua `apply_category()`); DM thật
   cho TA (cần `ta_roster.yaml` điền `discord_id` thật — hiện là placeholder).
@@ -27,7 +32,7 @@ python main.py
 Không có token vẫn chạy được phần logic thuần Python (không cần Discord):
 
 ```bash
-python -m unittest tests.test_decision tests.test_session_linker -v
+python -m unittest tests.test_decision tests.test_session_linker tests.test_config tests.test_ingestion -v
 ```
 
 ## Cấu trúc
@@ -57,8 +62,10 @@ python -m unittest tests.test_decision tests.test_session_linker -v
 
 ## Việc cần làm tiếp (theo MASTERPLAN.md §7)
 
-1. **Trước CP2/CP3**: dựng server Discord test mô phỏng cấu trúc thật (kênh `lý-thuyết`, `lab-d305`,
-   forum `hỏi-đáp`/`bài-học` có tag, `tài-nguyên`, `thông-báo`) + mời bot + gán role TA test.
+1. **Trước CP2/CP3**: dựng server Discord test mô phỏng cấu trúc thật — `lý-thuyết` và `thực-hành-lab`
+   là kênh **Forum** (không phải Text), mỗi phòng lớp (`Lab-D305`, `Lec-D302`...) tạo bằng **New Post**
+   bên trong forum đó, không phải tạo kênh riêng. Thêm forum `hỏi-đáp`/`chia-sẻ`/`bài-học` (có tag),
+   kênh `tài-nguyên`, `thông-báo` + mời bot + gán role TA test.
 2. **CP3**: thay `decide()` trong `decision.py` bằng HTTP call tới `/api/ask` (contract bàn với Nghĩa) —
    giữ nguyên interface `Decision(action, message, citations, confidence, class_code, reason)`.
 3. Khi An chốt taxonomy loại tin: viết agent phân loại gọi `ingestion.listener.apply_category()`.
