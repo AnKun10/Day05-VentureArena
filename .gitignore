@@ -19,3 +19,6 @@ edge-profile*/
 *.cookie
 *.egg-info/
 data/discord_crawl_dataset_snapshot_*/
+
+# KB pack có messages_clean chứa personal_data — KHÔNG push lên GitHub
+data/discord_kb_*/
