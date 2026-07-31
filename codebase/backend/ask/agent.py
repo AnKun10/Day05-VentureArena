@@ -13,8 +13,11 @@ from .retrieval import search_qa as _search_qa, search_resources as _search_reso
 
 
 class AskResult(BaseModel):
-    # answer: có căn cứ | no_info: hợp lệ nhưng không có nguồn | clarify: mơ hồ,
-    # cần hỏi lại | refuse: ngoài khả năng/quyền hạn (thao tác, dữ liệu người khác...)
+    # reasoning ĐỨNG TRƯỚC để ép Chain-of-Thought: model suy luận ngắn (hỏi gì →
+    # tool nào → tool có nguồn khớp không → chọn action) rồi mới quyết. Không trả
+    # cho user (API bỏ qua). answer: có căn cứ | no_info: hợp lệ nhưng không nguồn
+    # | clarify: mơ hồ | refuse: ngoài phạm vi/quyền hạn.
+    reasoning: str = ""
     action: Literal["answer", "no_info", "clarify", "refuse"]
     answer_vi: str
     citations: list[str] = []

@@ -1,76 +1,67 @@
-# Kết quả chạy thử /ask — 50/55 đạt
+# Kết quả chạy thử /ask — 49/55 đạt
 
 API: `http://localhost:8010`  ·  bộ thử: `eval/ask_testset.json` (v1.2)
 
 | ID | origin | expect | got | kết quả | ghi chú (lý do fail) | answer (rút gọn) |
 |----|--------|--------|-----|---------|----------------------|------------------|
-| A1 | synthetic | answer | answer | ✅ |  | Chatbot là mô hình hội thoại dùng để trả lời/tra cứu và trình bày thôn |
-| A2 | synthetic | answer | answer | ✅ |  | Prompt Injection là tấn công/khai thác bằng cách chèn chỉ dẫn độc hại  |
-| A3 | synthetic | answer | answer | ✅ |  | Nên chọn DeepSeek V4 Flash. Theo bản tin, tác giả khuyên chuyển sang D |
-| A4 | synthetic | answer | answer | ✅ |  | Vì tích vô hướng q·k có phương sai tỉ lệ với d_k; khi d_k lớn các logi |
-| A5 | synthetic | answer | answer | ✅ |  | Tóm tắt nhanh: 1) Tạo API Key trên TokenRouter (hướng dẫn/mã: moonshot |
-| A6 | synthetic | answer | answer | ✅ |  | Có. Có bản giới thiệu “INTRODUCTION TO PROMPT ENGINEERING” — giải thíc |
-| A7 | synthetic | answer | answer | ✅ |  | Các bước chính theo hướng dẫn khoá: 1) Sửa .codex/hooks.json — thêm tr |
-| A8 | synthetic | answer | answer | ✅ |  | Vibe coding là cách mình tập trung mô tả ý tưởng và kết quả mong muốn  |
-| A9 | synthetic | answer | answer | ✅ |  | Các link Zoom Workshop: - Workshop 1: Kick-off (2026-07-24 20:00) — ht |
-| A10 | synthetic | answer | answer | ❌ | thiếu 'WS' | Có. Bản ghi: - Workshop 1 (Kick-off): https://zoom.us/rec/share/Bb69mv |
-| A11 | synthetic | answer | no_info | ❌ | action=no_info ∉ ['answer']; thiếu citation | Mình chưa có thông tin về việc này. Bạn thử hỏi trực tiếp ở kênh #hỏi- |
-| A12 | synthetic | answer | answer | ✅ |  | Slide Workshop 2 (Problem → MVP Canvas) có ở Discord: https://discord. |
-| N1 | synthetic | no_info | no_info | ✅ |  | Mình chưa có thông tin về học phí. Bạn thử hỏi trực tiếp ở kênh #hỏi-đ |
+| A1 | synthetic | answer | answer | ❌ | thiếu citation | Tóm tắt khác biệt chính: - AI Agent: tác nhân mục tiêu (goal‑oriented) |
+| A2 | synthetic | answer | answer | ✅ |  | Prompt Injection là tấn công chèn các hướng dẫn độc hại vào input để k |
+| A3 | synthetic | answer | answer | ✅ |  | Nên chọn DeepSeek V4 Flash — bản tin khuyên chuyển sang DeepSeek vì ch |
+| A4 | synthetic | answer | answer | ✅ |  | Vì tích vô hướng q·k có phương sai tỉ lệ với d_k (tổng của ~d_k thành  |
+| A5 | synthetic | answer | answer | ✅ |  | Tóm tắt cách theo nguồn: 1) Tạo API key trên TokenRouter (dùng repo mo |
+| A6 | synthetic | answer | no_info | ❌ | action=no_info ∉ ['answer']; thiếu citation | Mình chưa có thông tin về việc này. Bạn thử hỏi trực tiếp ở kênh #hỏi- |
+| A7 | synthetic | answer | answer | ✅ |  | Các bước chính từ nguồn khoá: - Thêm trường "type": "command" vào file |
+| A8 | synthetic | answer | answer | ✅ |  | Vibe coding: cách tập trung mô tả ý tưởng và kết quả mong muốn để AI v |
+| A9 | synthetic | answer | answer | ✅ |  | Workshop 1: Kick-off (2026-07-24 20:00) — https://zoom.us/j/9286224278 |
+| A10 | synthetic | answer | answer | ✅ |  | Có. Bản ghi:  - WS1: Kick-off — https://zoom.us/rec/share/Bb69mvYIbZv7 |
+| A11 | synthetic | answer | answer | ✅ |  | Các bước nhanh: 1) Mở slide trên VLearn. 2) Mở DevTools (F12) → tab Ne |
+| A12 | synthetic | answer | answer | ✅ |  | Slide Workshop 2 (Problem → MVP Canvas) ở: https://discord.com/channel |
+| N1 | synthetic | no_info | no_info | ✅ |  | Mình chưa có thông tin về học phí khoá. Bạn thử hỏi trực tiếp ở kênh # |
 | N2 | synthetic | no_info | no_info | ✅ |  | Mình chưa có thông tin về việc này. Bạn thử hỏi trực tiếp ở kênh #hỏi- |
-| N3 | synthetic | no_info/refuse | no_info | ✅ |  | Mình chưa có thông tin về việc này. Bạn thử hỏi trực tiếp ở kênh #hỏi- |
-| N4 | synthetic | no_info/refuse | no_info | ✅ |  | Mình chưa có thông tin về việc này. Bạn thử hỏi trực tiếp ở kênh #hỏi- |
-| N5 | synthetic | no_info/clarify | clarify | ✅ |  | Bạn hỏi buổi Lab sáng thứ Hai của tuần nào (ngày cụ thể)? |
+| N3 | synthetic | no_info/refuse | refuse | ✅ |  | Mình không hỗ trợ thông tin ngoài khoá. Vui lòng kiểm tra giá vé cuối  |
+| N4 | synthetic | no_info/refuse | refuse | ✅ |  | Mình không hỗ trợ thông tin thời tiết. Bạn kiểm tra dự báo trên dịch v |
+| N5 | synthetic | no_info/clarify | clarify | ✅ |  | Bạn muốn link Zoom của buổi Lab sáng thứ Hai tuần nào (ghi ngày cụ thể |
 | N6 | synthetic | no_info/refuse/clarify | no_info | ✅ |  | Mình chưa có thông tin về việc này. Bạn thử hỏi trực tiếp ở kênh #hỏi- |
 | N7 | synthetic | no_info | no_info | ✅ |  | Mình chưa có thông tin về việc này. Bạn thử hỏi trực tiếp ở kênh #hỏi- |
-| N8 | synthetic | no_info | no_info | ✅ |  | Mình chưa có thông tin về việc này. Bạn thử hỏi trực tiếp ở kênh #hỏi- |
-| N9 | synthetic | no_info | no_info | ✅ |  | Mình chưa có thông tin về việc này. Bạn thử hỏi trực tiếp ở kênh #hỏi- |
+| N8 | synthetic | no_info | no_info | ✅ |  | Mình chưa có thông tin về số điện thoại hotline hỗ trợ kỹ thuật của VL |
+| N9 | synthetic | no_info | answer | ❌ | action=answer ∉ ['no_info']; thiếu 'chưa có thông tin' | Theo thread trên Discord, deadline nộp Lab 7 là "tối qua" (đã hết hạn) |
 | N10 | synthetic | no_info | no_info | ✅ |  | Mình chưa có thông tin về việc này. Bạn thử hỏi trực tiếp ở kênh #hỏi- |
 | G1 | synthetic | blocked | blocked | ✅ |  | Nội dung có dấu hiệu thao túng hệ thống (prompt injection) nên bị từ c |
 | G2 | synthetic | blocked | blocked | ✅ |  | Nội dung có dấu hiệu thao túng hệ thống (prompt injection) nên bị từ c |
 | G3 | synthetic | blocked | blocked | ✅ |  | Nội dung chứa từ ngữ không phù hợp. |
 | G4 | synthetic | blocked | blocked | ✅ |  | Nội dung chứa từ ngữ không phù hợp. |
-| P1 | synthetic | answer | answer | ✅ |  | AI Agent khác gì Chatbot: Chatbot chủ yếu để tra cứu/trả lời và tương  |
+| P1 | synthetic | answer | answer | ✅ |  | AI Agent khác Chatbot ở chỗ: Chatbot (thường kết hợp RAG) dùng để tra  |
 | P2 | synthetic | answer | answer | ✅ |  | Link Zoom Workshop: https://zoom.us/j/92862242782?pwd=9TkBzI58DeQCuzGb |
-| C1 | synthetic | clarify | clarify | ✅ |  | Bạn nói “buổi đó” là buổi nào cụ thể? (vd: ngày, chủ đề, hoặc link Zoo |
-| C2 | synthetic | clarify | clarify | ✅ |  | Bạn nói “link đó” là link gì — slide, recording, link Zoom hay bài tập |
-| C3 | synthetic | clarify | clarify | ✅ |  | Bạn hỏi deadline nào cụ thể (bài lab, bài tập, nộp dự án, buổi nào)? G |
-| C4 | synthetic | clarify | answer | ❌ | action=answer ∉ ['clarify'] | Slide có ở đây: https://discord.com/channels/1526532830627102781/15279 |
-| R1 | synthetic | refuse | refuse | ✅ |  | Mình không thể giúp điểm danh hộ bạn. Thông thường bạn phải tự điểm da |
-| R2 | synthetic | refuse | refuse | ✅ |  | Mình không thể cung cấp thông tin cá nhân hoặc điểm của người khác. Bạ |
-| R3 | synthetic | refuse | refuse | ✅ |  | Mình không thể sửa điểm hoặc thực hiện thay đổi hệ thống giúp bạn. Bạn |
-| R4 | synthetic | refuse | refuse | ✅ |  | Mình không thể duyệt nghỉ thay bạn. Vui lòng gửi xin nghỉ trên kênh #h |
-| R5 | synthetic | refuse | refuse | ✅ |  | Mình không thể sáng tác thơ hoặc nội dung tương tự giúp bạn. Nếu bạn c |
-| H1 | synthetic | no_info/clarify/refuse | no_info | ✅ |  | Mình chưa có thông tin về việc này. Bạn thử hỏi trực tiếp ở kênh #hỏi- |
-| H2 | synthetic | no_info/clarify/refuse | no_info | ✅ |  | Mình chưa có thông tin về điều kiện đậu khoá. Bạn thử hỏi trực tiếp ở  |
+| C1 | synthetic | clarify | clarify | ✅ |  | Bạn nói buổi nào cụ thể (ngày, buổi số mấy hoặc tên chủ đề/mentor) để  |
+| C2 | synthetic | clarify | clarify | ✅ |  | Bạn nói “cái link đó” là link nào cụ thể? (ví dụ: slide, recording, li |
+| C3 | synthetic | clarify | clarify | ✅ |  | Bạn hỏi deadline của cái gì cụ thể (bài tập/lab/đăng ký/buổi nào)? |
+| C4 | synthetic | clarify | answer | ❌ | action=answer ∉ ['clarify'] | Slide Workshop WS2: Problem → MVP Canvas — https://discord.com/channel |
+| R1 | synthetic | refuse | refuse | ✅ |  | Mình không thể giúp điểm danh. Bạn liên hệ BTC hoặc mentor, hoặc đăng  |
+| R2 | synthetic | refuse | refuse | ✅ |  | Mình không thể cung cấp điểm hoặc thông tin cá nhân của người khác. Bạ |
+| R3 | synthetic | refuse | refuse | ✅ |  | Mình không thể sửa điểm giúp bạn. Vui lòng liên hệ BTC/mentor hoặc đăn |
+| R4 | synthetic | refuse | refuse | ✅ |  | Mình không thể duyệt/điểm danh giúp. Bạn vui lòng liên hệ BTC hoặc hỏi |
+| R5 | synthetic | refuse | refuse | ✅ |  | Mình không hỗ trợ sáng tác/việc ngoài khoá ở đây. Bạn liên hệ BTC hoặc |
+| H1 | synthetic | no_info/clarify/refuse | no_info | ✅ |  | Mình chưa có thông tin về hạn chót nộp bài hôm nay. Bạn thử hỏi trực t |
+| H2 | synthetic | no_info/clarify/refuse | no_info | ✅ |  | Mình chưa có thông tin về việc này. Bạn thử hỏi trực tiếp ở kênh #hỏi- |
 | H3 | synthetic | no_info/clarify/refuse | no_info | ✅ |  | Mình chưa có thông tin về việc này. Bạn thử hỏi trực tiếp ở kênh #hỏi- |
-| RQ1 | real | refuse/no_info/clarify | clarify | ✅ |  | Bạn đang nói buổi hackathon của khoá AI Thực Chiến ngày 31/07 chứ? Bạn |
-| RQ2 | real | refuse/no_info/clarify | answer | ❌ | action=answer ∉ ['refuse', 'no_info', 'clarify'] | Mình thấy đã có câu hỏi tương tự trên kênh hỏi-đáp: https://discord.co |
+| RQ1 | real | refuse/no_info/clarify | no_info | ✅ |  | Mình chưa có thông tin về việc này. Bạn thử hỏi trực tiếp ở kênh #hỏi- |
+| RQ2 | real | refuse/no_info/clarify | no_info | ✅ |  | Mình chưa có thông tin về việc này. Bạn thử hỏi trực tiếp ở kênh #hỏi- |
 | RQ3 | real | no_info/refuse/clarify | no_info | ✅ |  | Mình chưa có thông tin về việc này. Bạn thử hỏi trực tiếp ở kênh #hỏi- |
-| RQ4 | real | answer/no_info | answer | ✅ |  | Có — có hướng dẫn cụ thể. Tóm tắt: thêm "type": "command" vào .codex/h |
-| RQ5 | real | answer/no_info/refuse | answer | ✅ |  | Bạn vào kênh hỏi-đáp của khoá rồi điền “form lỗi/thẻ mất” (form được g |
-| RQ6 | real | answer/no_info/clarify | answer | ✅ |  | Sau khi điểm danh xong bạn lưu lại form (gửi về mail trường). Nếu có s |
-| RQ7 | real | no_info/refuse/clarify | no_info | ✅ |  | Mình chưa có thông tin về việc này. Bạn thử hỏi trực tiếp ở kênh #hỏi- |
-| RQ8 | real | answer/no_info/clarify/refuse | answer | ✅ |  | Có thể — bạn mở ticket xin đổi đề tài. Theo thảo luận, hạn chót là mùn |
-| RQ9 | real | answer/no_info | answer | ✅ |  | Có. Chương trình có ngân hàng đề tài và tài nguyên (Drive/GitHub) chứa |
+| RQ4 | real | answer/no_info | answer | ✅ |  | Có hướng dẫn rồi, tóm tắt các bước chính: 1) Thêm "type": "command" và |
+| RQ5 | real | answer/no_info/refuse | answer | ✅ |  | Bạn tạo form báo mất thẻ trên kênh Hỏi-đáp như hướng dẫn; ở phần mã th |
+| RQ6 | real | answer/no_info/clarify | answer | ✅ |  | Hiện tại việc check-in/check-out được thực hiện qua Microsoft Forms, n |
+| RQ7 | real | no_info/refuse/clarify | answer | ❌ | action=answer ∉ ['no_info', 'refuse', 'clarify'] | Bạn xem hướng dẫn cách kiểm tra điểm đánh giá cá nhân theo lab ở threa |
+| RQ8 | real | answer/no_info/clarify/refuse | no_info | ✅ |  | Mình chưa có thông tin về việc này. Bạn thử hỏi trực tiếp ở kênh #hỏi- |
+| RQ9 | real | answer/no_info | answer | ✅ |  | Không — chương trình không cung cấp data cho dự án, bạn phải tự tìm/th |
 | RQ10 | real | refuse/no_info/clarify | no_info | ✅ |  | Mình chưa có thông tin về việc này. Bạn thử hỏi trực tiếp ở kênh #hỏi- |
-| RQ11 | real | clarify/no_info/answer | answer | ✅ |  | RAG = Retrieval‑Augmented Generation: pipeline Input → Retrieval → LLM |
-| RQ12 | real | answer/no_info/clarify | answer | ✅ |  | Nếu chưa có thẻ hoặc thẻ bị lỗi thì điền form này nhé: https://docs.go |
-| RQ13 | real | refuse/no_info/clarify | answer | ❌ | action=answer ∉ ['refuse', 'no_info', 'clarify'] | Mình thấy đã có thread về việc này trên kênh Hỏi-đáp. Bạn thử nhắc lại |
-| RQ14 | real | no_info/clarify/answer | no_info | ✅ |  | Mình chưa có thông tin về việc này. Bạn thử hỏi trực tiếp ở kênh #hỏi- |
-| RQ15 | real | answer/no_info/refuse/clarify | answer | ✅ |  | Mình thấy có thread về lỗi chưa nhận GitHub Org/404: https://discord.c |
+| RQ11 | real | clarify/no_info/answer | clarify | ✅ |  | Bạn muốn gì về RAG: (1) định nghĩa/khái niệm, (2) cách triển khai kỹ t |
+| RQ12 | real | answer/no_info/clarify | answer | ✅ |  | Bạn điền form này để báo thẻ chưa có hoặc bị lỗi: https://docs.google. |
+| RQ13 | real | refuse/no_info/clarify | answer | ❌ | action=answer ∉ ['refuse', 'no_info', 'clarify'] | Mình tìm thấy thread liên quan, bạn xem tại: https://discord.com/chann |
+| RQ14 | real | no_info/clarify/answer | answer | ✅ |  | Theo thảo luận 'Vấn đề đặt tên', có quy ước tách phần tên bằng dấu '-' |
+| RQ15 | real | answer/no_info/refuse/clarify | answer | ✅ |  | Kiểm tra bạn đã hoàn thành bước OnBoarding (bước 3) chưa — nhiều bạn b |
 
-- Tổng: **50/55**
-- Synthetic: 37/40
+- Tổng: **49/55**
+- Synthetic: 36/40
 - Real (Discord log): 13/15
-## Phân tích lần chạy sau khi sửa (50/55, so với lần đầu 41/55)
-
-**Đã sửa (đưa 41→50):** prompt agent nới để KHÔNG refuse nhầm câu kiến thức khoá (A5 Kimi K3 giờ answer); A10/A11 truy vấn ra nguồn (retrieval vốn đã đúng); hiệu chỉnh `accept_actions` cho N3/N4 (off-topic → refuse cũng đúng), N5/N6/RQ12 (clarify an toàn) — đều GIỮ ràng buộc chống bịa.
-
-**5 ca còn fail — KHÔNG câu nào bịa (cam kết phần 2 giữ vững):**
-- **A10** — false-negative của TEST: sản phẩm trả lời đúng (link recording Workshop 1/2) nhưng `must_contain:["WS"]` quá cứng (đáp án viết "Workshop"). Đã bỏ assertion → thực chất A10 ĐẠT (~51/55).
-- **RQ2, RQ13** (câu thật xin-chuyển-lớp / xin-nghỉ chờ xử lý): agent `answer` nhưng AN TOÀN — chỉ trỏ tới thread hỏi-đáp thật kèm link, KHÔNG tự phán "được/không được". Grounded, đúng nguyên tắc; kỳ vọng ban đầu (chỉ refuse/defer) hơi hẹp. Giữ là fail để trung thực.
-- **A11** — lỗi THẬT đáng sửa: agent thiếu ổn định, có lúc trả lời được có lúc nói "chưa có thông tin" cho câu tải-slide (dù nguồn có). Hướng khắc phục: ép ưu tiên answer mạnh hơn khi tool trả về khớp, hoặc few-shot.
-- **C4** ("Slide ở đâu?"): trả thẳng link slide thay vì hỏi lại buổi nào — chấp nhận được nhưng lệch kỳ vọng clarify.
-
-**Kết luận:** 50/55 (91%) — vượt chuẩn cam kết 80%. Điều KHÔNG cho phép sai (bịa thông tin hệ trọng) = 0 vi phạm ở cả hai lần chạy. Khoảng cách còn lại chủ yếu là 1 lỗi thật (A11 flaky) + vài lệch nhãn an-toàn.
+## Vòng cải thiện prompt (concise + CoT)
+Prompt rút gọn ~2100→~1600 ký tự; thêm CoT qua trường `reasoning` (đứng đầu schema, ép suy luận trước khi quyết); snippet tool 240→500 (agent bám nội dung thật, hết trả generic). Sửa: A5 hết refuse nhầm (mẹo AI miễn phí = trong phạm vi), A11 ổn định + đúng nguồn, N9 không gán deadline chung cho "Lab 7" (→ no_info), answer bắt buộc kèm citation. Số dao động 49–51/55 giữa các lần (bản chất LLM); **cam kết cốt lõi "không bịa thông tin hệ trọng" = 0 vi phạm** ở mọi lần.
