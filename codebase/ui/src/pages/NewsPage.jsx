@@ -36,14 +36,12 @@ const fromApi = (n) => {
   };
 };
 
-export default function NewsPage() {
+export default function NewsPage({ users, currentUser, onSelectUser }) {
   const [tag, setTag] = useState("all");
   const [selected, setSelected] = useState(null);
   const [bookmarks, setBookmarks] = useState(() => new Set());
 
   // Trạng thái phần "Dành cho bạn" (nối backend recommendations)
-  const [users, setUsers] = useState(null);
-  const [selectedUser, setSelectedUser] = useState(null);
   const [recs, setRecs] = useState(null);
   const [bioDraft, setBioDraft] = useState("");
   const [bioOpen, setBioOpen] = useState(false);
@@ -59,15 +57,8 @@ export default function NewsPage() {
   // Feed bản tin từ backend (data thật đã ingest+enrich); lỗi → null (offline, dùng mock)
   const [apiNews, setApiNews] = useState(null);
 
-  // Mount: nạp users + bản tin thật. Lỗi (backend chưa chạy) → chế độ offline với mock.
+  // Mount: nạp bản tin thật. Lỗi (backend chưa chạy) → chế độ offline với mock.
   useEffect(() => {
-    api
-      .users()
-      .then((list) => {
-        setUsers(list);
-        if (list.length) setSelectedUser(list[0].user_id);
-      })
-      .catch(() => setUsers(null));
     api
       .news()
       .then((list) => setApiNews(list.map(fromApi)))
@@ -114,37 +105,34 @@ export default function NewsPage() {
 
   // Đổi user → nạp lại gợi ý
   useEffect(() => {
-    if (selectedUser != null) fetchRecs(selectedUser);
-  }, [selectedUser]);
+    if (currentUser != null) fetchRecs(currentUser);
+  }, [currentUser]);
 
-  const currentUser = users?.find((u) => u.user_id === selectedUser) ?? null;
+  const currentUserObj = users?.find((u) => u.user_id === currentUser) ?? null;
 
   const openBio = () => {
-    setBioDraft(currentUser?.bio ?? "");
+    setBioDraft(currentUserObj?.bio ?? "");
     setBioOpen(true);
   };
 
   const saveBio = () => {
-    if (selectedUser == null) return;
+    if (currentUser == null) return;
     api
-      .setBio(selectedUser, bioDraft)
+      .setBio(currentUser, bioDraft)
       .then(() => {
-        setUsers((prev) =>
-          prev ? prev.map((u) => (u.user_id === selectedUser ? { ...u, bio: bioDraft } : u)) : prev
-        );
         setBioOpen(false);
-        fetchRecs(selectedUser);
+        fetchRecs(currentUser);
       })
       .catch(() => {});
   };
 
   const handleRecBookmark = (messageId) => {
-    if (selectedUser == null) return;
+    if (currentUser == null) return;
     api
-      .setBookmark(selectedUser, messageId, true)
+      .setBookmark(currentUser, messageId, true)
       .then(() => {
         setBookmarks((prev) => new Set(prev).add(messageId));
-        fetchRecs(selectedUser);
+        fetchRecs(currentUser);
       })
       .catch(() => {});
   };
@@ -153,22 +141,22 @@ export default function NewsPage() {
   const handleFeedBookmark = (id) => {
     const on = !bookmarks.has(id);
     toggleBookmark(id);
-    if (apiNews !== null && selectedUser != null) {
+    if (apiNews !== null && currentUser != null) {
       api
-        .setBookmark(selectedUser, id, on)
-        .then(() => fetchRecs(selectedUser))
+        .setBookmark(currentUser, id, on)
+        .then(() => fetchRecs(currentUser))
         .catch(() => {});
     }
   };
 
   // Đổi user → đồng bộ lại danh sách bookmark từ server
   useEffect(() => {
-    if (selectedUser == null || apiNews === null) return;
+    if (currentUser == null || apiNews === null) return;
     api
-      .bookmarks(selectedUser)
+      .bookmarks(currentUser)
       .then((ids) => setBookmarks(new Set(ids)))
       .catch(() => {});
-  }, [selectedUser, apiNews]);
+  }, [currentUser, apiNews]);
 
   const sourceNews = apiNews ?? NEWS;
   const hot = useMemo(
@@ -246,8 +234,8 @@ export default function NewsPage() {
               </h2>
               <select
                 className="h-8 rounded-lg border bg-background px-2 text-sm"
-                value={selectedUser ?? ""}
-                onChange={(e) => setSelectedUser(e.target.value)}
+                value={currentUser ?? ""}
+                onChange={(e) => onSelectUser(e.target.value)}
               >
                 {users.map((u) => (
                   <option key={u.user_id} value={u.user_id}>
@@ -366,7 +354,7 @@ export default function NewsPage() {
       <Dialog open={bioOpen} onOpenChange={setBioOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Sửa bio — {currentUser?.name}</DialogTitle>
+            <DialogTitle>Sửa bio — {currentUserObj?.name}</DialogTitle>
           </DialogHeader>
           <textarea
             className="min-h-28 w-full rounded-lg border bg-background p-2 text-sm"

@@ -1,4 +1,4 @@
-import { Bot, CalendarDays, Library, MessagesSquare, Newspaper } from "lucide-react";
+import { Bot, CalendarDays, Library, MessagesSquare, Newspaper, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
@@ -6,6 +6,7 @@ const NAV = [
   { id: "calendar", icon: CalendarDays, label: "Lịch học" },
   { id: "resources", icon: Library, label: "Tài nguyên" },
   { id: "news", icon: Newspaper, label: "Bản tin" },
+  { id: "settings", icon: Settings, label: "Cài đặt" },
 ];
 
 export default function Sidebar({ page, onNavigate }) {

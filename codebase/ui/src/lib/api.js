@@ -21,4 +21,13 @@ export const api = {
     j(`${API_BASE}/api/users/${id}/bookmarks/${mid}`, { method: on ? "PUT" : "DELETE" }),
   recommendations: (id, k = 6) =>
     j(`${API_BASE}/api/recommendations?user_id=${id}&k=${k}`),
+  settings: (id) => j(`${API_BASE}/api/users/${id}/settings`),
+  saveSettings: (id, body) =>
+    j(`${API_BASE}/api/users/${id}/settings`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+  schedule: (id, from, to) =>
+    j(`${API_BASE}/api/schedule?user_id=${id}&from=${from}&to=${to}`),
 };
