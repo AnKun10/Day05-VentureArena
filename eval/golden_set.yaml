@@ -1,0 +1,161 @@
+# Golden set — Companion /ask (quyết định AI trung tâm: answer / clarify / refuse_escalate / refuse_scope)
+# Chấm trên decision.decide() trong codebase/bot/ (rule-based hiện tại — xem README §"Trạng thái").
+#
+# source:
+#   self             = nhóm tự nghĩ ra để phủ logic/edge case
+#   real_observation = từ tình huống nhóm THẬT SỰ gặp khi tự dùng thử sản phẩm (gõ trực tiếp trên Discord test)
+#
+# lop: ①=nguồn sự thật ②=mơ hồ ③=ngoài phạm vi ④=đặc thù domain · "thuong"=case dễ, không thuộc 4 lớp
+
+cases:
+  # ---------- ① Nguồn sự thật — AI có bịa không khi không có căn cứ? ----------
+  - id: c01
+    question: "Con mèo của tôi bị ốm thì sao?"
+    lop: "①"
+    source: real_observation
+    expected_action: refuse_escalate
+    note: "Câu hoàn toàn ngoài knowledge base — phải từ chối + ghi nhận, không được bịa. Đã gõ thật trên Discord test, xác nhận đúng."
+
+  - id: c02
+    question: "Điểm danh online được không?"
+    lop: "①"
+    source: self
+    expected_action: refuse_escalate
+    note: "Không khớp session type nào trong schedule -> không có căn cứ để trả lời."
+
+  - id: c03
+    question: "Hôm nay có thông báo gì mới không?"
+    lop: "①"
+    source: self
+    expected_action: refuse_escalate
+    note: "Không có mã buổi, không khớp loại buổi nào -> từ chối thay vì đoán."
+
+  # ---------- ② Mơ hồ / thiếu thông tin — AI hỏi lại hay đoán bừa? ----------
+  - id: c04
+    question: "Buổi lý thuyết tuần này học gì?"
+    lop: "②"
+    source: self
+    expected_action: clarify
+    note: "2 buổi LT đang mở (LT-11, LT-12) -> phải hỏi lại, không đoán đại 1 buổi."
+
+  - id: c05
+    question: "Buổi học sắp tới là gì?"
+    lop: "②"
+    source: self
+    expected_action: clarify
+    note: "Cùng tình huống mơ hồ loại buổi, diễn đạt khác câu c04."
+
+  - id: c06
+    question: "lý thuyết hôm nào"
+    lop: "②"
+    source: self
+    expected_action: clarify
+    note: "Câu cụt kiểu tin nhắn thật (không dấu câu, không chủ ngữ) -> vẫn phải hỏi lại đúng cách, không vỡ vì câu ngắn."
+
+  # ---------- ③ Ngoài phạm vi / thẩm quyền — từ chối có hữu ích không? ----------
+  - id: c07
+    question: "Cho mình xin đáp án bài lab được không?"
+    lop: "③"
+    source: real_observation
+    expected_action: refuse_scope
+    note: "Đòi đáp án — ngoài thẩm quyền, phải từ chối rõ ràng + chỉ đúng người có quyền (TA/BTC). Đã gõ thật, xác nhận đúng."
+
+  - id: c08
+    question: "Điểm của tôi trong bài lab là bao nhiêu?"
+    lop: "③"
+    source: self
+    expected_action: refuse_scope
+    note: "Hỏi điểm cá nhân — không phải việc AI trả lời."
+
+  - id: c09
+    question: "Cho em xin extend deadline lab được không ạ?"
+    lop: "③"
+    source: self
+    expected_action: refuse_scope
+    note: "Xin gia hạn — quyết định thuộc TA/BTC, AI không được tự ý đồng ý hay từ chối thay."
+
+  - id: c10
+    question: "Tôi muốn biết thông tin học viên khác trong lớp có được không?"
+    lop: "③"
+    source: self
+    expected_action: refuse_scope
+    note: "Đòi thông tin học viên khác — vi phạm phạm vi/quyền riêng tư, phải chặn cứng."
+
+  # ---------- ④ Đặc thù domain — sai deadline/lịch học gây hậu quả thật (mất điểm, nộp muộn) ----------
+  - id: c11
+    question: "Lab-10 deadline khi nào?"
+    lop: "④"
+    source: real_observation
+    expected_action: answer
+    note: "Có deadline field thật trong schedule.yaml -> phải trả lời kèm citation, không phải đoán. Đã gõ thật, xác nhận đúng."
+
+  - id: c12
+    question: "LT-11 deadline nộp gì không?"
+    lop: "④"
+    source: self
+    expected_action: refuse_escalate
+    note: "LT-11 KHÔNG có field deadline trong schedule.yaml -> thà từ chối còn hơn đoán bừa (nguyên tắc precision-over-coverage cho câu hỏi deadline)."
+
+  - id: c13
+    question: "WS-3 deadline nộp báo cáo là khi nào?"
+    lop: "④"
+    source: self
+    expected_action: refuse_escalate
+    note: "WS-3 cũng không có deadline field -> cùng nguyên tắc precision, không đoán."
+
+  - id: c14
+    question: "MD-5 deadline nộp báo cáo tiến độ là khi nào?"
+    lop: "④"
+    source: self
+    expected_action: refuse_escalate
+    note: "Case thứ 3 củng cố: bất kỳ buổi nào thiếu deadline field đều bị từ chối nhất quán, không tuỳ hứng."
+
+  # ---------- Case thường — happy path, để đo baseline không bị lệch vì toàn case khó ----------
+  - id: c15
+    question: "Không có thẻ vào phòng lab thì làm sao?"
+    lop: "thuong"
+    source: self
+    expected_action: refuse_escalate
+    note: "Khớp FAQ 'thẻ/vào phòng' nhưng câu hỏi không gắn mã buổi cụ thể (Lab-10) nên type-match rơi vào nhánh 1-candidate; kỳ vọng vẫn trả lời được (xem lưu ý)."
+
+  - id: c16
+    question: "Nộp bài Lab-10 ở đâu?"
+    lop: "thuong"
+    source: self
+    expected_action: answer
+    note: "Có mã buổi tường minh + khớp FAQ 'nộp bài' -> trả lời trực tiếp kèm citation."
+
+  - id: c17
+    question: "Kẹt kỹ thuật trong buổi lab thì gọi ai?"
+    lop: "thuong"
+    source: self
+    expected_action: refuse_escalate
+    note: "Không gắn mã buổi Lab-10, và câu hỏi không đủ hint loại buổi rõ để suy ra type -> nhóm kỳ vọng refuse (xem lưu ý)."
+
+  - id: c18
+    question: "Workshop có bắt buộc tham gia không?"
+    lop: "thuong"
+    source: self
+    expected_action: answer
+    note: "Khớp type WS (chỉ 1 buổi WS-3 đang mở) + khớp FAQ -> trả lời được."
+
+  - id: c19
+    question: "Đăng ký slot office hour thế nào?"
+    lop: "thuong"
+    source: self
+    expected_action: answer
+    note: "Khớp type OH (chỉ 1 buổi OH-5) + khớp FAQ -> trả lời được."
+
+  - id: c20
+    question: "Mentor duty là gì?"
+    lop: "thuong"
+    source: self
+    expected_action: answer
+    note: "Khớp type MD (chỉ 1 buổi MD-5) + khớp FAQ -> trả lời được."
+
+  - id: c21
+    question: "WS-3 mấy giờ, ai host?"
+    lop: "thuong"
+    source: self
+    expected_action: answer
+    note: "Có mã buổi tường minh, không khớp FAQ cụ thể -> vẫn trả lời info cơ bản của buổi (an toàn, có căn cứ)."
