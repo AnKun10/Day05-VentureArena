@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8000";
+const API_BASE = (import.meta.env.VITE_API_BASE ?? "http://localhost:8000").trim().replace(/\/+$/, "");
 
 async function j(url, opts) {
   const res = await fetch(url, opts);
