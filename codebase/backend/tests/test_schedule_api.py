@@ -2,7 +2,7 @@ from fastapi.testclient import TestClient
 
 import api.main as api_main
 from api.main import app, get_store
-from ingest.schedule import build_schedule, recurring_sessions
+from ingest.schedule import apply_user_overrides, block_key, build_schedule, recurring_sessions
 from ingest.store import Store
 
 SET4 = {"cohort": "4", "lt_room": "D302", "lab_room": "D305"}
@@ -122,10 +122,52 @@ def test_ws_materials_match_by_title_number_and_subtitle():
     assert urls == {"https://r/ws1", "https://s/ws1"}
 
 
+def test_build_schedule_assigns_stable_key():
+    items = build_schedule(SET4, [], [], "2026-07-27", "2026-07-27")
+    lab = next(i for i in items if i["type"] == "LAB")
+    assert lab["key"] == block_key(lab) == "2026-07-27|LAB|14:00"   # start GỐC
+
+
+def test_apply_overrides_hide_patch_add():
+    items = build_schedule(SET4, [], [], "2026-07-27", "2026-07-27")   # LAB + LT
+    lt_key = next(i["key"] for i in items if i["type"] == "LT")
+    lab_key = next(i["key"] for i in items if i["type"] == "LAB")
+    overrides = [
+        {"block_key": lab_key, "hidden": True, "patch": None, "custom": None},        # ẩn Lab
+        {"block_key": lt_key, "hidden": False, "patch": {"location": "D999"}, "custom": None},  # sửa phòng LT
+        {"block_key": "custom:x", "hidden": False, "patch": None,
+         "custom": {"date": "2026-07-27", "type": "WS", "title": "Tự thêm", "start": "19:00", "end": "20:00"}},
+    ]
+    out = apply_user_overrides(items, overrides, "2026-07-27", "2026-07-27")
+    types = sorted(i["type"] for i in out)
+    assert types == ["LT", "WS"]                        # Lab bị ẩn, còn LT + buổi tự thêm
+    lt = next(i for i in out if i["type"] == "LT")
+    assert lt["location"] == "D999" and lt["edited"] is True
+    ws = next(i for i in out if i["type"] == "WS")
+    assert ws["custom"] is True and ws["title"] == "Tự thêm"
+
+
 def _client(tmp_path, monkeypatch):
     store = Store(str(tmp_path / "t.db"))
     app.dependency_overrides[get_store] = lambda: store
     return TestClient(app), store
+
+
+def test_schedule_override_is_per_user(tmp_path, monkeypatch):
+    client, store = _client(tmp_path, monkeypatch)
+    client.get("/api/users/an/settings")                # ensure_user (cohort 4)
+    day = client.get("/api/schedule", params={"user_id": "an", "from": "2026-07-27", "to": "2026-07-27"}).json()
+    lab_key = next(i["key"] for i in day if i["type"] == "LAB")
+    # user 'an' sửa phòng Lab; user 'vy' KHÔNG bị ảnh hưởng
+    client.put("/api/users/an/schedule/override", json={"block_key": lab_key, "patch": {"location": "E403"}})
+    an_day = client.get("/api/schedule", params={"user_id": "an", "from": "2026-07-27", "to": "2026-07-27"}).json()
+    vy_day = client.get("/api/schedule", params={"user_id": "vy", "from": "2026-07-27", "to": "2026-07-27"}).json()
+    assert next(i for i in an_day if i["type"] == "LAB")["location"] == "E403"
+    assert next(i for i in vy_day if i["type"] == "LAB")["location"] == "D305"    # mặc định
+    # khôi phục
+    client.delete(f"/api/users/an/schedule/override/{lab_key}")
+    an_day2 = client.get("/api/schedule", params={"user_id": "an", "from": "2026-07-27", "to": "2026-07-27"}).json()
+    assert next(i for i in an_day2 if i["type"] == "LAB")["location"] == "D305"
 
 
 def test_settings_roundtrip_and_schedule_uses_them(tmp_path, monkeypatch):

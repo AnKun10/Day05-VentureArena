@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CalendarDays, Library, MessagesSquare, Newspaper, Settings } from "lucide-react";
+import { Bookmark, CalendarDays, Library, MessagesSquare, Newspaper, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,7 @@ const NAV = [
   { id: "calendar", icon: CalendarDays, label: "Lịch học" },
   { id: "resources", icon: Library, label: "Tài nguyên" },
   { id: "news", icon: Newspaper, label: "Bản tin" },
+  { id: "bookmarks", icon: Bookmark, label: "Đã lưu" },
   { id: "settings", icon: Settings, label: "Cài đặt" },
 ];
 

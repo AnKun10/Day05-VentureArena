@@ -139,4 +139,49 @@ def build_schedule(settings: dict, events: list[dict], resources: list[dict],
 
     items.extend(extra)
     items.sort(key=lambda i: (i["date"], i["start"] or "99:99"))
+    for it in items:
+        it["key"] = block_key(it)
     return items
+
+
+# ---- Cá nhân hoá lịch: override theo user (không phụ thuộc hoàn toàn vào Agent) ----
+
+_OVERRIDE_KEYS = ("title", "start", "end", "location", "format", "host", "zoom_url")
+
+
+def block_key(item: dict) -> str:
+    """Khoá ỔN ĐỊNH của 1 buổi (KHÔNG gồm field sửa được) để gắn override —
+    dùng start GỐC nên user sửa giờ vẫn khớp khoá ở lần build sau."""
+    return f"{item.get('date')}|{item.get('type')}|{item.get('start') or 'na'}"
+
+
+def _custom_item(c: dict) -> dict:
+    return {"type": c.get("type") or "OTHER", "title": c.get("title") or "(buổi tự thêm)",
+            "date": c.get("date"), "start": c.get("start"), "end": c.get("end"),
+            "location": c.get("location"), "host": c.get("host"),
+            "format": c.get("format") or "Offline", "cohort": c.get("cohort") or "all",
+            "zoom_url": c.get("zoom_url"), "session_code": None, "jump_url": None,
+            "materials": []}
+
+
+def apply_user_overrides(items: list[dict], overrides: list[dict],
+                         date_from: str, date_to: str) -> list[dict]:
+    """Áp override của 1 user lên lịch build sẵn: ẩn buổi, sửa field, thêm buổi
+    tự tạo. Đánh dấu `edited`/`custom` để UI hiển thị khác."""
+    by_key = {o["block_key"]: o for o in overrides}
+    out = []
+    for it in items:
+        ov = by_key.get(it["key"])
+        if ov and ov.get("hidden"):
+            continue
+        if ov and ov.get("patch"):
+            it = {**it, **{k: v for k, v in ov["patch"].items()
+                           if k in _OVERRIDE_KEYS and v is not None}}
+            it["edited"] = True
+        out.append(it)
+    for o in overrides:
+        c = o.get("custom")
+        if c and c.get("date") and date_from <= c["date"] <= date_to:
+            out.append({**_custom_item(c), "key": o["block_key"], "custom": True})
+    out.sort(key=lambda i: (i["date"], i["start"] or "99:99"))
+    return out

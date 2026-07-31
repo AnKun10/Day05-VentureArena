@@ -3,6 +3,7 @@ import Sidebar from "./components/Sidebar.jsx";
 import CalendarPage from "./pages/CalendarPage.jsx";
 import ResourcesPage from "./pages/ResourcesPage.jsx";
 import NewsPage from "./pages/NewsPage.jsx";
+import BookmarkPage from "./pages/BookmarkPage.jsx";
 import SettingsPage from "./pages/SettingsPage.jsx";
 import { api } from "@/lib/api";
 
@@ -45,6 +46,7 @@ export default function App() {
             refreshUsers={refreshUsers}
           />
         )}
+        {page === "bookmarks" && <BookmarkPage currentUser={currentUser} />}
         {page === "settings" && (
           <SettingsPage
             users={users}

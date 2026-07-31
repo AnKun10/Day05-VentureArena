@@ -95,6 +95,23 @@ def _text(value: str) -> str:
     return value[:1_900] + ("…" if len(value) > 1_900 else "")
 
 
+def _metrics_footer(meta: dict, user: str, action: str) -> str:
+    """Log quan sát ra console (latency/token/tool) + trả dòng subtext gọn cho reply."""
+    lat = meta.get("latency_ms", 0)
+    tok = meta.get("output_tokens", 0)
+    tools = meta.get("tool_calls", 0)
+    print(f"[ask] user={user} action={action} latency={lat}ms "
+          f"out_tokens={tok} tool_calls={tools}", flush=True)
+    parts = []
+    if lat:
+        parts.append(f"⏱️ {lat / 1000:.1f}s")
+    if tok:
+        parts.append(f"🔢 {tok} tokens")
+    if tools:
+        parts.append(f"🔧 {tools} tool")
+    return ("\n-# " + " · ".join(parts)) if parts else ""
+
+
 class CompanionBot(commands.Bot):
     async def setup_hook(self):
         guild_id = os.environ.get("DISCORD_GUILD_ID")
@@ -132,7 +149,9 @@ def create_bot() -> commands.Bot:
                 await interaction.followup.send(f"⚠️ {result.get('answer')}", ephemeral=True)
                 return
             citations = "\n".join(f"• {citation}" for citation in result.get("citations", []))
-            await interaction.followup.send(_text(result["answer"] + (f"\n\nNguồn:\n{citations}" if citations else "")), ephemeral=True)
+            footer = _metrics_footer(result.get("meta") or {}, interaction.user.name, result.get("action"))
+            body = result["answer"] + (f"\n\nNguồn:\n{citations}" if citations else "")
+            await interaction.followup.send(_text(body) + footer, ephemeral=True)
         except Exception as exc:
             await interaction.followup.send(_fail_message(exc), ephemeral=True)
 

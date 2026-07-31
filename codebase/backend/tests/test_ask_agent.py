@@ -21,14 +21,17 @@ def test_format_resources_with_when():
 
 
 def test_answer_question_uses_injected_runner():
+    # runner trả AskResult trần → answer_question bọc thành (result, {})
     fake = lambda store, q: AskResult(action="answer", answer_vi="đáp", citations=["u"])
-    r = answer_question(store=None, question="hỏi gì đó", cfg=None, runner=fake)
+    r, meta = answer_question(store=None, question="hỏi gì đó", cfg=None, runner=fake)
     assert r.action == "answer" and r.answer_vi == "đáp" and r.citations == ["u"]
+    assert meta == {}
 
 
 def _map(monkeypatch, result: AskResult):
     from api.main import app, get_store
-    monkeypatch.setattr(ask, "answer_question", lambda store, q, cfg: result)
+    monkeypatch.setattr(ask, "answer_question",
+                        lambda store, q, cfg: (result, {"tool_calls": 1, "output_tokens": 42}))
     app.dependency_overrides[get_store] = lambda: object()
     try:
         return TestClient(app).post("/api/ask", json={"question": "Câu hỏi kiểm thử"}).json()
@@ -41,6 +44,7 @@ def test_api_ask_maps_answer(monkeypatch):
                                        citations=["https://d/1", "https://d/1"]))
     assert body["action"] == "answer" and body["confidence"] == 1.0
     assert body["citations"] == ["https://d/1"]           # dedup
+    assert body["meta"]["tool_calls"] == 1 and "latency_ms" in body["meta"]
 
 
 def test_api_ask_maps_no_info(monkeypatch):

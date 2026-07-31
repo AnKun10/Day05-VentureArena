@@ -4,12 +4,16 @@ Agent chỉ trả lời dựa trên kết quả tool (chống bịa). Với runn
 OpenAI thật; test truyền runner giả để chạy offline.
 """
 
+from datetime import datetime, timedelta, timezone
 from typing import Literal
 
 from pydantic import BaseModel
 
 from .prompts import ASK_V1
 from .retrieval import search_qa as _search_qa, search_resources as _search_resources
+
+_VN_TZ = timezone(timedelta(hours=7))       # Asia/Ho_Chi_Minh (UTC+7)
+_VN_DAYS = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"]
 
 
 class AskResult(BaseModel):
@@ -41,12 +45,23 @@ def _format_resources(results: list[dict]) -> str:
     return "\n".join(lines)
 
 
+def now_vn() -> str:
+    now = datetime.now(_VN_TZ)
+    return f"{_VN_DAYS[now.weekday()]}, {now.strftime('%Y-%m-%d %H:%M')} (giờ VN, UTC+7)"
+
+
 def _build_agent(store, cfg):
     from agents import Agent, function_tool
     from recsys.embedder import embed_texts
 
     def _embed(text: str):
         return embed_texts([text], cfg)[0]
+
+    @function_tool
+    def current_datetime() -> str:
+        """Ngày giờ HIỆN TẠI (giờ Việt Nam). Gọi khi cần hiểu 'hôm nay', 'tuần
+        này', 'sắp tới', 'gần đây' hoặc để biết đâu là thông tin/buổi mới nhất."""
+        return now_vn()
 
     @function_tool
     def search_qa(query: str) -> str:
@@ -61,12 +76,35 @@ def _build_agent(store, cfg):
         return _format_resources(_search_resources(store, query))
 
     return Agent(name="companion_ask", instructions=ASK_V1, model=cfg.enrich_model,
-                 tools=[search_qa, search_resources], output_type=AskResult)
+                 tools=[current_datetime, search_qa, search_resources], output_type=AskResult)
 
 
-def answer_question(store, question: str, cfg, runner=None) -> AskResult:
+def _extract_meta(result) -> dict:
+    """Rút số liệu quan sát từ RunResult: số lần gọi tool + token (best-effort)."""
+    meta = {"tool_calls": 0, "output_tokens": 0, "input_tokens": 0}
+    try:
+        for it in getattr(result, "new_items", []) or []:
+            if type(it).__name__ == "ToolCallItem" or getattr(it, "type", "") == "tool_call_item":
+                meta["tool_calls"] += 1
+    except Exception:
+        pass
+    try:
+        for resp in getattr(result, "raw_responses", []) or []:
+            usage = getattr(resp, "usage", None)
+            if usage:
+                meta["output_tokens"] += getattr(usage, "output_tokens", 0) or 0
+                meta["input_tokens"] += getattr(usage, "input_tokens", 0) or 0
+    except Exception:
+        pass
+    return meta
+
+
+def answer_question(store, question: str, cfg, runner=None) -> tuple[AskResult, dict]:
+    """Trả (AskResult, meta). meta = {tool_calls, output_tokens, input_tokens}."""
     if runner is not None:
-        return runner(store, question)
+        r = runner(store, question)
+        return r if isinstance(r, tuple) else (r, {})
     from agents import Runner
     agent = _build_agent(store, cfg)
-    return Runner.run_sync(agent, question).final_output
+    result = Runner.run_sync(agent, question)
+    return result.final_output, _extract_meta(result)

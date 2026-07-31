@@ -214,7 +214,34 @@ def get_schedule(user_id: str | None = None, cohort: str | None = None,
         settings = {"cohort": cohort or "4", "lt_room": "D302", "lab_room": "D305"}
     events = store.list_schedule_events(settings["cohort"], from_, to)
     resources = store.list_resources()
-    return build_schedule(settings, events, resources, from_, to)
+    items = build_schedule(settings, events, resources, from_, to)
+    if user_id:                       # áp chỉnh sửa cá nhân (chỉ của user này)
+        from ingest.schedule import apply_user_overrides
+        items = apply_user_overrides(items, store.get_schedule_overrides(user_id), from_, to)
+    return items
+
+
+class ScheduleOverrideBody(BaseModel):
+    block_key: str
+    hidden: bool = False
+    patch: dict | None = None         # {title?, start?, end?, location?, format?, host?, zoom_url?}
+    custom: dict | None = None        # buổi tự thêm: {date, type, title, start, end, location, format...}
+
+
+@app.put("/api/users/{user_id}/schedule/override")
+def put_schedule_override(user_id: str, body: ScheduleOverrideBody,
+                          store: Store = Depends(get_store)):
+    """Lưu chỉnh sửa lịch của RIÊNG user: ẩn buổi / sửa field / thêm buổi tự tạo."""
+    store.ensure_user(user_id)
+    store.set_schedule_override(user_id, body.block_key, body.hidden, body.patch, body.custom)
+    return {"ok": True}
+
+
+@app.delete("/api/users/{user_id}/schedule/override/{block_key:path}")
+def delete_schedule_override(user_id: str, block_key: str, store: Store = Depends(get_store)):
+    """Bỏ chỉnh sửa (khôi phục về bản do hệ thống/Agent dựng)."""
+    store.delete_schedule_override(user_id, block_key)
+    return {"ok": True}
 
 
 @app.get("/api/ai-news")

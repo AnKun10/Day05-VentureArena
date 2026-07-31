@@ -52,6 +52,11 @@ CREATE TABLE IF NOT EXISTS ai_news(
   title TEXT, url TEXT, source TEXT, summary TEXT, created_at TEXT,
   PRIMARY KEY(user_id, date, rank)
 );
+CREATE TABLE IF NOT EXISTS schedule_overrides(
+  user_id TEXT, block_key TEXT, hidden INTEGER DEFAULT 0,
+  patch TEXT, custom TEXT, updated_at TEXT,
+  PRIMARY KEY(user_id, block_key)
+);
 """
 
 
@@ -279,6 +284,43 @@ class Store:
         return [r["message_id"] for r in self.conn.execute(
             "SELECT message_id FROM bookmarks WHERE user_id=? ORDER BY created_at DESC",
             (user_id,))]
+
+    # ---------- schedule overrides (cá nhân hoá lịch, chỉ áp cho 1 user) ----------
+
+    def set_schedule_override(self, user_id: str, block_key: str, hidden: bool = False,
+                              patch: dict | None = None, custom: dict | None = None) -> None:
+        self.conn.execute(
+            "INSERT OR REPLACE INTO schedule_overrides"
+            "(user_id, block_key, hidden, patch, custom, updated_at) VALUES(?,?,?,?,?,?)",
+            (user_id, block_key, 1 if hidden else 0,
+             json.dumps(patch) if patch else None,
+             json.dumps(custom) if custom else None, _now()))
+        self.conn.commit()
+
+    def get_schedule_overrides(self, user_id: str) -> list[dict]:
+        rows = self.conn.execute(
+            "SELECT block_key, hidden, patch, custom FROM schedule_overrides WHERE user_id=?",
+            (user_id,)).fetchall()
+        out = []
+        for r in rows:
+            out.append({"block_key": r["block_key"], "hidden": bool(r["hidden"]),
+                        "patch": json.loads(r["patch"]) if r["patch"] else None,
+                        "custom": json.loads(r["custom"]) if r["custom"] else None})
+        return out
+
+    def delete_schedule_override(self, user_id: str, block_key: str) -> None:
+        self.conn.execute(
+            "DELETE FROM schedule_overrides WHERE user_id=? AND block_key=?",
+            (user_id, block_key))
+        self.conn.commit()
+
+    def list_bookmarked_news(self, user_id: str) -> list[dict]:
+        """Full news (đã enrich) mà user đã bookmark — cho trang Bookmark."""
+        rows = self.conn.execute(
+            "SELECT p.* FROM bookmarks b JOIN posts p ON p.message_id=b.message_id "
+            "WHERE b.user_id=? AND p.enriched_at IS NOT NULL "
+            "ORDER BY b.created_at DESC", (user_id,)).fetchall()
+        return [self._post_dict(r) for r in rows]
 
     def bookmarked_news(self, user_id: str, limit: int = 10) -> list[dict]:
         rows = self.conn.execute(

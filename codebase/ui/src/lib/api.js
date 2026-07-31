@@ -31,6 +31,16 @@ export const api = {
     }),
   schedule: (id, from, to) =>
     j(`${API_BASE}/api/schedule?user_id=${id}&from=${from}&to=${to}`),
+  saveScheduleOverride: (id, body) =>
+    j(`${API_BASE}/api/users/${id}/schedule/override`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+  deleteScheduleOverride: (id, key) =>
+    j(`${API_BASE}/api/users/${id}/schedule/override/${encodeURIComponent(key)}`, {
+      method: "DELETE",
+    }),
   resources: () => j(`${API_BASE}/api/resources`),
   aiNews: (id, k = 3) => j(`${API_BASE}/api/ai-news?user_id=${id}&k=${k}`),
   newsSearch: (q, k = 20) =>

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, MapPin, Video } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight, MapPin, Plus, Video } from "lucide-react";
 import {
   SESSIONS,
   SESSION_TYPES,
@@ -62,13 +62,16 @@ const fromApiSession = (item) => {
   }
   return {
     code: item.session_code || item.type,
-    key: [item.date, item.type, item.start ?? "", item.title ?? ""].join("|"),
+    // key SERVER (ổn định, để gắn override) — fallback tự dựng nếu thiếu
+    key: item.key || [item.date, item.type, item.start ?? "", item.title ?? ""].join("|"),
     type: item.type,
     title: item.title,
     date: new Date(item.date + "T00:00:00"),
     start,
     end,
     timeLabel,
+    rawStart: item.start || "",       // giờ gốc dạng HH:MM (cho form sửa)
+    rawEnd: item.end || "",
     format: item.format,
     location: item.location,
     cls: item.cohort ? "Khoá " + item.cohort : "",
@@ -76,6 +79,8 @@ const fromApiSession = (item) => {
     links: { zoom: asHttpUrl(item.zoom_url) },
     materials: item.materials,
     jump_url: asHttpUrl(item.jump_url),
+    edited: Boolean(item.edited),     // user đã sửa buổi này
+    custom: Boolean(item.custom),     // buổi user tự thêm
     fromApi: true,
   };
 };
@@ -125,24 +130,50 @@ export default function CalendarPage({ currentUser }) {
 
   // Lịch thật từ backend theo user + tuần đang xem; lỗi/offline/chưa có user → null (dùng mock)
   const [apiSessions, setApiSessions] = useState(null);
+  const [adding, setAdding] = useState(false);           // mở modal "Thêm buổi"
   const scheduleSeq = useRef(0);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     if (currentUser == null) return;
     const seq = ++scheduleSeq.current;
-    const from = toISODate(monday);
-    const to = toISODate(addDays(monday, 6));
     api
-      .schedule(currentUser, from, to)
+      .schedule(currentUser, toISODate(monday), toISODate(addDays(monday, 6)))
       .then((list) => {
-        if (seq !== scheduleSeq.current) return;
-        setApiSessions(list.map(fromApiSession));
+        if (seq === scheduleSeq.current) setApiSessions(list.map(fromApiSession));
       })
       .catch(() => {
-        if (seq !== scheduleSeq.current) return;
-        setApiSessions(null);
+        if (seq === scheduleSeq.current) setApiSessions(null);
       });
-  }, [currentUser, weekOffset]);
+  }, [currentUser, monday.getTime()]);
+
+  useEffect(load, [load]);
+
+  // ---- Chỉnh sửa cá nhân (chỉ áp cho user này) ----
+  const saveEdit = (patch) => {                          // sửa buổi có sẵn
+    api.saveScheduleOverride(currentUser, { block_key: selected.key, patch }).then(() => {
+      setSelected(null);
+      load();
+    });
+  };
+  const hideBlock = () => {
+    api.saveScheduleOverride(currentUser, { block_key: selected.key, hidden: true }).then(() => {
+      setSelected(null);
+      load();
+    });
+  };
+  const revertBlock = () => {
+    api.deleteScheduleOverride(currentUser, selected.key).then(() => {
+      setSelected(null);
+      load();
+    });
+  };
+  const addCustom = (custom) => {                        // thêm buổi tự tạo
+    const key = "custom:" + (crypto?.randomUUID?.() || Date.now());
+    api.saveScheduleOverride(currentUser, { block_key: key, custom }).then(() => {
+      setAdding(false);
+      load();
+    });
+  };
 
   const sourceSessions = apiSessions ?? SESSIONS;
   const sessionsByDay = useMemo(
@@ -193,6 +224,12 @@ export default function CalendarPage({ currentUser }) {
             <ChevronRight />
           </Button>
         </div>
+
+        {currentUser != null && (
+          <Button variant="outline" size="sm" onClick={() => setAdding(true)}>
+            <Plus /> Thêm buổi
+          </Button>
+        )}
 
         <div className="ml-auto flex flex-wrap items-center gap-x-3.5 gap-y-1.5">
           {Object.entries(SESSION_TYPES).map(([k, t]) => (
@@ -291,8 +328,10 @@ export default function CalendarPage({ currentUser }) {
                         borderLeft: `2px solid ${t.color}`,
                       }}
                     >
-                      <div className="font-mono text-[10px] font-medium" style={{ color: t.color }}>
+                      <div className="flex items-center gap-1 font-mono text-[10px] font-medium" style={{ color: t.color }}>
                         {s.code} · {s.timeLabel.split(" – ")[0]}
+                        {s.edited && <span title="Bạn đã sửa">✎</span>}
+                        {s.custom && <span title="Bạn tự thêm">＋</span>}
                       </div>
                       <div className="mt-0.5 line-clamp-2 text-[11px] leading-tight font-medium text-foreground/90">
                         {s.title}
@@ -317,7 +356,25 @@ export default function CalendarPage({ currentUser }) {
         </div>
       </div>
 
-      {selected && <SessionModal session={selected} onClose={() => setSelected(null)} />}
+      {selected && (
+        <SessionModal
+          session={selected}
+          onClose={() => setSelected(null)}
+          editable={currentUser != null}
+          onSave={saveEdit}
+          onHide={hideBlock}
+          onRevert={revertBlock}
+        />
+      )}
+      {adding && (
+        <SessionModal
+          session={{ type: "OTHER", title: "", date: monday, format: "Offline", links: {} }}
+          isNew
+          onClose={() => setAdding(false)}
+          editable
+          onSave={addCustom}
+        />
+      )}
     </div>
   );
 }
