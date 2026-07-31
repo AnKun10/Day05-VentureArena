@@ -1,16 +1,16 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Clapperboard,
   ExternalLink,
   FileText,
   Link2,
-  Lock,
   Presentation,
   Search,
   SearchX,
 } from "lucide-react";
 import { RESOURCES, RESOURCE_KINDS, SESSION_TYPES } from "../data/mock.js";
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -29,19 +29,50 @@ const sessionColor = (code) => {
   return SESSION_TYPES[prefix === "LAB" ? "LAB" : prefix]?.color ?? "var(--muted-foreground)";
 };
 
+const fmtDate = (iso) => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "" : `${d.getDate()}/${d.getMonth() + 1}`;
+};
+
+// Bỏ URL dính liền trong title (data crawl đôi khi nối url vào tên) + cắt gọn.
+const cleanTitle = (t) => (t || "").replace(/https?:\/\/\S+/g, "").replace(/[:\s]+$/, "").trim();
+
+// Chuẩn hoá 1 resource từ /api/resources về shape UI (giống mock RESOURCES).
+const fromApi = (r) => ({
+  id: r.message_id,
+  kind: RESOURCE_KINDS[r.kind] ? r.kind : "link",
+  title: cleanTitle(r.title) || "(tài nguyên)",
+  session: r.session_code || null,
+  by: r.author || "BTC",
+  date: fmtDate(r.created_at),
+  url: r.url || "#",
+});
+
 export default function ResourcesPage() {
   const [kind, setKind] = useState("all");
   const [query, setQuery] = useState("");
+  // Tài nguyên thật từ backend (đồng bộ với những gì Agent đã rút); lỗi/offline → mock.
+  const [apiResources, setApiResources] = useState(null);
+
+  useEffect(() => {
+    api
+      .resources()
+      .then((list) => setApiResources(list.map(fromApi)))
+      .catch(() => setApiResources(null));
+  }, []);
+
+  const source = apiResources ?? RESOURCES;
 
   const filtered = useMemo(
     () =>
-      RESOURCES.filter(
+      source.filter(
         (r) =>
           (kind === "all" || r.kind === kind) &&
           (query.trim() === "" ||
             (r.title + " " + (r.session || "")).toLowerCase().includes(query.toLowerCase()))
       ),
-    [kind, query]
+    [source, kind, query]
   );
 
   const bySession = filtered.filter((r) => r.session);
@@ -52,8 +83,8 @@ export default function ResourcesPage() {
       <div className="mb-5">
         <h1 className="font-heading text-lg font-semibold">Tài nguyên</h1>
         <p className="text-xs text-muted-foreground">
-          Slide, record, tài liệu từ kênh <span className="font-mono">#tài-nguyên</span> — tự động
-          gắn vào buổi học tương ứng
+          Slide, record, tài liệu từ kênh <span className="font-mono">#tài-nguyên</span> — AI tự
+          động rút &amp; gắn vào buổi học tương ứng
         </p>
       </div>
 
@@ -116,7 +147,8 @@ function Section({ title, count, children }) {
 
 function ResourceRow({ r }) {
   const k = RESOURCE_KINDS[r.kind];
-  const Icon = KIND_ICONS[r.kind];
+  const Icon = KIND_ICONS[r.kind] ?? Link2;
+  const open = () => r.url && r.url !== "#" && window.open(r.url, "_blank", "noopener");
   return (
     <div className="flex items-center gap-3.5 px-4 py-3">
       <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
@@ -135,22 +167,18 @@ function ResourceRow({ r }) {
           )}
         </div>
         <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
-          <span>{k.label}</span>
+          <span>{k?.label ?? "Link"}</span>
           <span className="text-muted-foreground/40">·</span>
           <span>{r.by}</span>
-          <span className="text-muted-foreground/40">·</span>
-          <span className="font-mono">{r.date}</span>
-          {r.note && (
+          {r.date && (
             <>
               <span className="text-muted-foreground/40">·</span>
-              <span className="flex items-center gap-1 text-amber-600">
-                <Lock className="size-3" /> {r.note}
-              </span>
+              <span className="font-mono">{r.date}</span>
             </>
           )}
         </div>
       </div>
-      <Button variant="ghost" size="sm" className="shrink-0" onClick={(e) => e.preventDefault()}>
+      <Button variant="ghost" size="sm" className="shrink-0" onClick={open} disabled={!r.url || r.url === "#"}>
         Mở <ExternalLink data-icon="inline-end" />
       </Button>
     </div>

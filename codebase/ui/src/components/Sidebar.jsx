@@ -1,5 +1,7 @@
-import { Bot, CalendarDays, Library, MessagesSquare, Newspaper, Settings } from "lucide-react";
+import { useEffect, useState } from "react";
+import { CalendarDays, Library, MessagesSquare, Newspaper, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 
 const NAV = [
@@ -9,16 +11,59 @@ const NAV = [
   { id: "settings", icon: Settings, label: "Cài đặt" },
 ];
 
-export default function Sidebar({ page, onNavigate }) {
+function initials(name) {
+  const parts = (name || "?").trim().split(/\s+/);
+  return ((parts[0]?.[0] || "") + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
+}
+
+function UserAvatar({ user }) {
+  const [broken, setBroken] = useState(false);
+  const url = user?.avatar_url;
+  if (url && !broken) {
+    return (
+      <img
+        src={url}
+        alt={user?.name || ""}
+        onError={() => setBroken(true)}
+        className="size-9 shrink-0 rounded-lg object-cover"
+      />
+    );
+  }
+  return (
+    <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground">
+      {initials(user?.name)}
+    </div>
+  );
+}
+
+export default function Sidebar({ page, onNavigate, users, currentUser }) {
+  const me = users?.find((u) => u.user_id === currentUser) ?? null;
+  const [cohort, setCohort] = useState(null);
+
+  // Cohort hiển thị dưới tên lấy theo settings của user hiện tại (đổi user → đổi theo)
+  useEffect(() => {
+    if (currentUser == null) return;
+    let alive = true;
+    api
+      .settings(currentUser)
+      .then((s) => alive && setCohort(s?.cohort ?? null))
+      .catch(() => alive && setCohort(null));
+    return () => {
+      alive = false;
+    };
+  }, [currentUser]);
+
+  const displayName = me?.name || (currentUser != null ? String(currentUser) : "Companion");
+
   return (
     <aside className="flex w-60 shrink-0 flex-col border-r bg-sidebar">
       <div className="flex items-center gap-2.5 px-4 pt-5 pb-4">
-        <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <Bot className="size-5" />
-        </div>
-        <div className="leading-tight">
-          <div className="font-heading text-sm font-semibold">Companion</div>
-          <div className="text-xs text-muted-foreground">AI Thực Chiến · Cohort 3</div>
+        <UserAvatar user={me} />
+        <div className="min-w-0 leading-tight">
+          <div className="truncate font-heading text-sm font-semibold">{displayName}</div>
+          <div className="text-xs text-muted-foreground">
+            AI Thực Chiến{cohort ? ` · Khoá ${cohort}` : ""}
+          </div>
         </div>
       </div>
 
@@ -46,7 +91,7 @@ export default function Sidebar({ page, onNavigate }) {
           <MessagesSquare className="size-4" />
           Hỏi đáp
           <Badge variant="outline" className="ml-auto text-[10px] text-muted-foreground">
-            Sắp có
+            Trên Discord
           </Badge>
         </div>
       </nav>
@@ -57,7 +102,7 @@ export default function Sidebar({ page, onNavigate }) {
             Demo
           </Badge>
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Bản tin & gợi ý lấy từ backend (offline → mock). Mở từ Discord bằng lệnh{" "}
+            Bản tin &amp; gợi ý lấy từ backend (offline → mock). Mở từ Discord bằng lệnh{" "}
             <kbd className="rounded border bg-muted px-1 py-0.5 font-mono text-[10px] text-foreground">
               /hub
             </kbd>

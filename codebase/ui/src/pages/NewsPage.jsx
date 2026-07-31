@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Bookmark, Flame, Heart, Inbox, MessageSquare, Sparkles } from "lucide-react";
+import { Bookmark, ExternalLink, Flame, Heart, Inbox, Loader2, MessageSquare, Newspaper, Sparkles } from "lucide-react";
 import { NEWS, NEWS_TAGS, ROLE_COLORS, isHot, tagOf, thumb } from "../data/mock.js";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
@@ -43,6 +43,9 @@ export default function NewsPage({ users, currentUser, onSelectUser, refreshUser
 
   // Trạng thái phần "Dành cho bạn" (nối backend recommendations)
   const [recs, setRecs] = useState(null);
+  // Daily AI News (undefined=đang tải, []=chưa có, [...]=danh sách)
+  const [aiNews, setAiNews] = useState(undefined);
+  const aiSeq = useRef(0);
   const [bioDraft, setBioDraft] = useState("");
   const [bioOpen, setBioOpen] = useState(false);
   const recSeq = useRef(0);
@@ -106,6 +109,21 @@ export default function NewsPage({ users, currentUser, onSelectUser, refreshUser
   // Đổi user → nạp lại gợi ý
   useEffect(() => {
     if (currentUser != null) fetchRecs(currentUser);
+  }, [currentUser]);
+
+  // Đổi user → nạp Daily AI News (lần đầu trong ngày có thể mất ~15-25s ở backend)
+  useEffect(() => {
+    if (currentUser == null) return;
+    const seq = ++aiSeq.current;
+    setAiNews(undefined);
+    api
+      .aiNews(currentUser)
+      .then((res) => {
+        if (seq === aiSeq.current) setAiNews(res.items || []);
+      })
+      .catch(() => {
+        if (seq === aiSeq.current) setAiNews([]);
+      });
   }, [currentUser]);
 
   const currentUserObj = users?.find((u) => u.user_id === currentUser) ?? null;
@@ -315,6 +333,47 @@ export default function NewsPage({ users, currentUser, onSelectUser, refreshUser
           </>
         )}
       </div>
+
+      {/* Daily AI News cho bạn — AI crawl + verify nguồn, cập nhật mỗi ngày */}
+      {currentUser != null && (
+        <div className="mb-6">
+          <h2 className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+            <Newspaper className="size-3.5 text-primary" /> Daily AI News cho bạn
+          </h2>
+          <p className="mb-2.5 text-[11px] text-muted-foreground">
+            AI crawl &amp; xác minh nguồn tin AI mới theo sở thích của bạn · cập nhật mỗi ngày 1 lần
+          </p>
+          {aiNews === undefined ? (
+            <div className="flex items-center gap-2 rounded-lg border bg-card/50 px-4 py-6 text-sm text-muted-foreground">
+              <Loader2 className="size-4 animate-spin" /> Đang tổng hợp tin AI cho bạn…
+            </div>
+          ) : aiNews.length === 0 ? (
+            <p className="rounded-lg border bg-card/50 px-4 py-6 text-sm text-muted-foreground">
+              Chưa lấy được tin hôm nay — thử lại sau nhé.
+            </p>
+          ) : (
+            <div className="grid gap-2.5 sm:grid-cols-3">
+              {aiNews.map((a, i) => (
+                <a
+                  key={i}
+                  href={a.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col gap-1.5 rounded-lg border bg-card p-3 transition-shadow hover:shadow-md"
+                >
+                  <div className="flex items-center gap-1.5 text-[10px] font-medium text-primary">
+                    <Newspaper className="size-3 shrink-0" />
+                    <span className="truncate">{a.source}</span>
+                    <ExternalLink className="ml-auto size-3 shrink-0 text-muted-foreground" />
+                  </div>
+                  <div className="line-clamp-2 text-sm leading-snug font-semibold">{a.title}</div>
+                  <div className="line-clamp-3 text-xs text-muted-foreground">{a.summary}</div>
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Filter theo tag (taxonomy 10 tag — AI gắn, 1 bài có thể nhiều tag) */}
       <div className="mb-4 flex flex-wrap gap-1.5">

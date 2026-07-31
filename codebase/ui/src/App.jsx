@@ -33,7 +33,7 @@ export default function App() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      <Sidebar page={page} onNavigate={setPage} />
+      <Sidebar page={page} onNavigate={setPage} users={users} currentUser={currentUser} />
       <main className="min-w-0 flex-1 overflow-y-auto">
         {page === "calendar" && <CalendarPage currentUser={currentUser} />}
         {page === "resources" && <ResourcesPage />}
