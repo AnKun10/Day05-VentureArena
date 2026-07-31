@@ -1,0 +1,9 @@
+{
+  "timestamp": "2026-07-31T04:40:44.848777+00:00",
+  "question": "Bao giờ thì có kết quả thi cuối kỳ?",
+  "action": "refuse",
+  "provider": "gemini",
+  "answer": "Mình không có thông tin chính thức về việc này — câu hỏi đã được ghi nhận và sẽ gửi TA phụ trách lớp của bạn trong bản tổng hợp gần nhất.",
+  "citations": [],
+  "confidence": 0.2
+}
