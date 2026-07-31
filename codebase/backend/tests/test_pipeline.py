@@ -18,6 +18,10 @@ def failing_runner(text):
     raise RuntimeError("api down")
 
 
+def failing_schedule_runner(text):
+    raise RuntimeError("schedule api down")
+
+
 def test_run_once_then_enrich_once(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)  # tránh ghi đè trace thật ở eval/traces/ingest
     store = Store(str(tmp_path / "t.db"))
@@ -121,3 +125,36 @@ def test_run_once_extracts_announcements(tmp_path, monkeypatch):
     stats2 = run_once(store, AnnounceSource(), Config(), runner=fake_runner,
                       schedule_runner=lambda t: fake)
     assert stats2["schedule_events"] == 0                       # extract-once (checkpoint + mark)
+
+
+def test_run_once_failed_extraction_retries_next_run(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    from ingest.agents import ScheduleEvent, ScheduleExtraction
+    from ingest.models import RawPost
+
+    class AnnounceSource:
+        """Nguồn giả không lọc theo since (giống TaiNguyenSource ở trên) — mô
+        phỏng đúng tình huống bài lỗi vẫn còn trong tập fetch() ở lượt sau vì
+        checkpoint thong-bao không được advance khi extract lỗi."""
+        def fetch(self, since):
+            return [RawPost(message_id="3002", channel="thong-bao:4", title="TB",
+                            content="Workshop tối nay 20:00", author="BTC",
+                            created_at="2026-07-30T07:00:00+00:00")]
+
+    store = Store(str(tmp_path / "t.db"))
+
+    # Run 1: extractor lỗi → không mark, checkpoint không advance.
+    stats1 = run_once(store, AnnounceSource(), Config(), runner=fake_runner,
+                      schedule_runner=failing_schedule_runner)
+    assert stats1["schedule_events"] == 0
+    assert store.is_schedule_extracted("3002") is False
+    assert store.get_checkpoint("thong-bao:4") == 0
+
+    # Run 2: extractor hoạt động lại → bài lỗi ở run 1 được thử lại và lưu event.
+    fake = ScheduleExtraction(events=[ScheduleEvent(
+        type="WS", title="WS retry", date="2026-07-30", start="20:00", cohort="4")])
+    stats2 = run_once(store, AnnounceSource(), Config(), runner=fake_runner,
+                      schedule_runner=lambda t: fake)
+    assert stats2["schedule_events"] == 1
+    assert store.is_schedule_extracted("3002") is True
+    assert store.get_checkpoint("thong-bao:4") == 3002

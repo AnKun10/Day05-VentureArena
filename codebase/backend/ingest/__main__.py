@@ -16,15 +16,23 @@ def _fallback_summary(content: str) -> str:
 def run_once(store: Store, source, cfg: Config, limit: int = 20,
              force: bool = False, runner=None, vectors=None, embed_fn=None,
              schedule_runner=None) -> dict:
+    # CHÚ Ý: since hiện KHÔNG có key cho các kênh thong-bao — đó là lý do retry
+    # bài extract lỗi vẫn hoạt động hôm nay (checkpoint thong-bao được lưu
+    # nhưng không được dùng để lọc fetch). Nếu sau này thêm key thong-bao vào
+    # since để tránh refetch thừa, PHẢI giữ nguyên cơ chế "không advance
+    # checkpoint khi extract lỗi trong kênh đó" bên dưới, nếu không bài lỗi sẽ
+    # không bao giờ được thử lại (checkpoint đã vượt qua message_id của nó).
     since = {ch: store.get_checkpoint(ch)
              for ch in ("chia-se", "bai-hoc", "tai-nguyen")}
     posts = source.fetch(since=since)
     schedule_events = 0
+    failed_channels: set[str] = set()  # kênh thong-bao có ít nhất 1 lần extract lỗi trong lượt này
     for p in posts:
         if p.channel == "tai-nguyen":
             store.add_resource(p.message_id, detect_kind(p.title), p.title,
                                detect_session(p.title), p.author, p.jump_url,
                                p.created_at)
+            store.set_checkpoint(p.channel, p.message_id)
         elif p.channel.startswith("thong-bao"):
             if not store.is_schedule_extracted(p.message_id):
                 try:
@@ -36,9 +44,14 @@ def run_once(store: Store, source, cfg: Config, limit: int = 20,
                         p.message_id, [e.model_dump() for e in extraction.events], trace_id)
                 except Exception as exc:  # extract lỗi: không mark, thử lại lượt sau
                     print(f"[schedule-fail] {p.message_id}: {exc}")
+                    failed_channels.add(p.channel)
+            # kênh này đã lỗi ở lượt này (bài này hoặc bài trước đó cùng kênh)
+            # → không advance checkpoint, giữ nguyên khả năng thử lại lượt sau.
+            if p.channel not in failed_channels:
+                store.set_checkpoint(p.channel, p.message_id)
         else:
             store.upsert_post(p)
-        store.set_checkpoint(p.channel, p.message_id)
+            store.set_checkpoint(p.channel, p.message_id)
 
     enriched = failed = 0
     for row in store.pending_enrichment(limit=limit, force=force):

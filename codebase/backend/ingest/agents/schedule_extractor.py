@@ -1,15 +1,32 @@
 import json
+import re
 import uuid
 from pathlib import Path
 from typing import Literal
 
 from agents import Agent, Runner
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from ..config import Config
 from ..prompts import SCHEDULE_V1, SCHEDULE_VERSION
 
 TRACE_DIR = Path("eval/traces/schedule")
+
+_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+_TIME_RE = re.compile(r"^(\d{1,2}):(\d{2})$")
+
+
+def _normalize_time(value: str | None) -> str | None:
+    """'H:MM' hoặc 'HH:MM' hợp lệ -> 'HH:MM' đã zero-pad; sai định dạng -> None."""
+    if value is None:
+        return None
+    m = _TIME_RE.match(value.strip())
+    if not m:
+        return None
+    hour, minute = int(m.group(1)), int(m.group(2))
+    if not (0 <= hour <= 23 and 0 <= minute <= 59):
+        return None
+    return f"{hour:02d}:{minute:02d}"
 
 
 class ScheduleEvent(BaseModel):
@@ -23,6 +40,18 @@ class ScheduleEvent(BaseModel):
     zoom_url: str | None = None
     host: str | None = None
     location: str | None = None
+
+    @field_validator("date")
+    @classmethod
+    def _validate_date(cls, v: str) -> str:
+        if not _DATE_RE.match(v):
+            raise ValueError(f"date phải đúng định dạng YYYY-MM-DD, nhận được: {v!r}")
+        return v
+
+    @field_validator("start", "end")
+    @classmethod
+    def _normalize_start_end(cls, v: str | None) -> str | None:
+        return _normalize_time(v)
 
 
 class ScheduleExtraction(BaseModel):

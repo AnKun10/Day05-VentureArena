@@ -40,6 +40,14 @@ XÁC ĐỊNH format:
 - Mặc định "Zoom" trừ khi bài nêu rõ học/họp trực tiếp tại phòng/địa điểm cụ
   thể → khi đó format = "Offline" và điền location nếu có.
 
+LƯU Ý VỀ LAB/LT (lịch cố định):
+- Lịch LAB/LT cố định (phòng, giờ theo thời khoá biểu) ĐÃ CÓ SẴN trong hệ
+  thống. CHỈ trích sự kiện type LAB hoặc LT khi bài đăng là một THÔNG BÁO
+  CHÍNH THỨC về THAY ĐỔI lịch học (đổi phòng, đổi giờ, học bù, nghỉ buổi...).
+- Bài đăng chỉ NHẮC TỚI "phòng lab", "lớp học"... trong một ngữ cảnh khác
+  (tìm đồ thất lạc, hỏi đáp, kể chuyện...) KHÔNG phải thông báo đổi lịch/phòng
+  → events RỖNG ([]), kể cả khi bài có nêu ngày/giờ cụ thể.
+
 VÍ DỤ 1 — bài đăng ngày 2026-07-30, kênh "thong-bao:3":
 "📢 WORKSHOP TỐI NAY! 20:00 - 22:00, diễn giả Nguyễn Văn A, chủ đề RAG nâng
 cao. Link Zoom: https://zoom.us/j/123456"
@@ -54,4 +62,10 @@ VÍ DỤ 2 — bài đăng ngày 2026-07-30, kênh "thong-bao:4":
 "Nhắc mọi người nộp bài Lab 3 trước cuối tuần này nhé, đừng quên đọc kỹ
 rubric trước khi nộp."
 → events: [] (không có buổi học/sự kiện cụ thể, chỉ là nhắc nhở nộp bài)
+
+VÍ DỤ 3 — bài đăng ngày 2026-07-27, kênh "thong-bao:3":
+"Tìm MacBook Air màu bạc bỏ quên ở phòng lab E403 chiều nay 27/7/2026, ai nhặt
+được liên hệ giúp mình với ạ, cảm ơn cả nhà!"
+→ events: [] (bài tìm đồ thất lạc, chỉ nhắc tới phòng lab chứ không phải
+  thông báo đổi lịch/phòng — KHÔNG suy ra sự kiện LAB dù có ngày/giờ cụ thể)
 """
