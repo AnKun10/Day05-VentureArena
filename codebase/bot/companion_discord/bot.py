@@ -15,7 +15,7 @@ from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
 
-from .formatting import digest_embed, schedule_embed
+from .formatting import ai_news_embed, digest_embed, schedule_embed
 
 
 BOT_ROOT = Path(__file__).resolve().parents[1]
@@ -200,6 +200,20 @@ def create_bot() -> commands.Bot:
                 me = next((u for u in users if u.get("user_id") == interaction.user.name), None)
                 current = (me or {}).get("bio") or "_(chưa có — dùng `/bio text:...` để thêm)_"
                 await interaction.followup.send(f"📝 Bio hiện tại của bạn:\n> {current}", ephemeral=True)
+        except Exception as exc:
+            await interaction.followup.send(_fail_message(exc), ephemeral=True)
+
+    @bot.tree.command(name="daily-ai-news", description="5 tin AI mới trong ngày, chọn theo sở thích của bạn")
+    async def daily_ai_news(interaction: discord.Interaction):
+        await interaction.response.defer(thinking=True, ephemeral=True)
+        asyncio.create_task(asyncio.to_thread(_sync_user, interaction))
+        user = quote(interaction.user.name)
+        try:
+            # lần đầu trong ngày backend crawl+verify (~30-45s) → cho 90s
+            data = await asyncio.to_thread(
+                _request_json, f"{api_url}/api/ai-news?user_id={user}&k=5", None, "GET", 90)
+            await interaction.followup.send(embed=_embed_from(ai_news_embed(data.get("items", []))),
+                                            ephemeral=True)
         except Exception as exc:
             await interaction.followup.send(_fail_message(exc), ephemeral=True)
 

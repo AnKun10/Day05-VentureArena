@@ -3,6 +3,7 @@
 import pytest
 
 from companion_discord.formatting import (
+    ai_news_embed,
     TAG_LABELS,
     bucket,
     digest_embed,
@@ -157,3 +158,12 @@ def test_tag_labels_complete():
         "ai-model", "ai-skill", "ai-tools", "api-mcp", "dataset",
         "soft-skills", "survey", "system-design", "ui-ux", "other",
     }
+
+
+def test_ai_news_embed():
+    e = ai_news_embed([{"title": "MoCa", "url": "https://a", "source": "arxiv.org",
+                        "summary": "tóm tắt"}])
+    assert "Daily AI News" in e["title"]
+    assert "[**MoCa**](https://a)" in e["description"]
+    assert "arxiv.org" in e["description"] and "tóm tắt" in e["description"]
+    assert "Chưa lấy được" in ai_news_embed([])["description"]

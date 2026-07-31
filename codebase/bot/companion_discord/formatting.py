@@ -51,6 +51,7 @@ _BUCKET_EMOJI = {"Sáng": "🌅", "Chiều": "🌇", "Tối": "🌙"}
 COLOR_SCHEDULE = 0x2563EB
 COLOR_DIGEST = 0x16A34A
 COLOR_PERSONAL = 0x9333EA
+COLOR_AINEWS = 0x0EA5E9
 
 
 def bucket(start: str | None) -> str:
@@ -199,3 +200,26 @@ def digest_embed(items: list[dict], personalized: bool) -> dict:
         fields.append({"name": name, "value": value, "inline": False})
 
     return {"title": "📰 Bản tin mới nhất", "color": COLOR_DIGEST, "fields": fields}
+
+
+def ai_news_embed(items: list[dict]) -> dict:
+    """Embed cho /daily-ai-news: mỗi bài title (masked link) + nguồn + tóm tắt."""
+    if not items:
+        return {"title": "🗞️ Daily AI News cho bạn", "color": COLOR_AINEWS,
+                "description": "Chưa lấy được tin hôm nay — bạn thử lại sau nhé.", "fields": []}
+    nl = chr(10)
+    lines = []
+    for idx, a in enumerate(items, 1):
+        title = _clip(a.get("title") or "(không tiêu đề)", 90)
+        url = a.get("url")
+        head = f"[**{title}**]({url})" if url else f"**{title}**"
+        summary = _clip(a.get("summary") or "", 160)
+        src = a.get("source") or ""
+        line = f"**{idx}.** {head}"
+        if summary:
+            line += nl + "▸ " + summary
+        if src:
+            line += "  ·  `" + src + "`"
+        lines.append(line)
+    return {"title": "🗞️ Daily AI News cho bạn", "color": COLOR_AINEWS,
+            "description": _join_capped(lines, 4000), "fields": []}
