@@ -5,6 +5,7 @@ import json
 import os
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 import discord
@@ -65,7 +66,7 @@ def create_bot() -> commands.Bot:
     async def digest(interaction: discord.Interaction, option: app_commands.Choice[str] | None = None):
         await interaction.response.defer(thinking=True, ephemeral=True)
         choice = option.value if option else "latest"
-        user = interaction.user.name
+        user = quote(interaction.user.name)
         try:
             if choice == "personalize":
                 items = await asyncio.to_thread(_request_json, f"{api_url}/api/recommendations?user_id={user}&k=10")
@@ -81,7 +82,7 @@ def create_bot() -> commands.Bot:
     @app_commands.describe(date="Ngày xem lịch, dạng YYYY-MM-DD (mặc định hôm nay)")
     async def schedule(interaction: discord.Interaction, date: str | None = None):
         await interaction.response.defer(thinking=True, ephemeral=True)
-        user = interaction.user.name
+        user = quote(interaction.user.name)
         d = date or datetime.now().strftime("%Y-%m-%d")
         try:
             items = await asyncio.to_thread(_request_json, f"{api_url}/api/schedule?user_id={user}&from={d}&to={d}")
@@ -93,6 +94,6 @@ def create_bot() -> commands.Bot:
     @bot.tree.command(name="hub", description="Mở Companion Web UI")
     async def hub(interaction: discord.Interaction):
         ui_url = os.environ.get("COMPANION_UI_URL", "http://localhost:5173")
-        await interaction.response.send_message(ui_url + "?user=" + interaction.user.name, ephemeral=True)
+        await interaction.response.send_message(ui_url + "?user=" + quote(interaction.user.name), ephemeral=True)
 
     return bot

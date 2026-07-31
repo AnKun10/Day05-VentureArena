@@ -78,7 +78,7 @@ Lịch gồm 2 phần ghép lại theo `date`:
   ở các channel `thong-bao`, extract-once — bài đã trích lưu trong bảng đánh dấu
   riêng (`schedule_extracted`) nên không gọi AI lại cho bài cũ, giống cơ chế
   enrich-once ở trên. Nếu 1 buổi LAB/LT trong tuần có announcement đổi phòng/host
-  riêng (override), event trích được sẽ ghi đè field tương ứng lên block
+  riêng (override phòng/host/zoom_url), event trích được sẽ ghi đè field tương ứng lên block
   recurring cùng ngày thay vì tạo dòng riêng; các loại khác (WS/OH/MD/OTHER)
   được dedup theo `(type, date, start)` trước khi ghép vào lịch.
 

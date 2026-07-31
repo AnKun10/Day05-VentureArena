@@ -1,8 +1,10 @@
 """ManifestSource — đọc manifest.json (schema v3) từ snapshot crawl Discord.
 
 Map nguồn → kênh pipeline: sharing → chia-se · lessons → bai-hoc ·
-resources (text) → tai-nguyen. Các kênh khác trong manifest (general,
-questions, announcements…) không thuộc pipeline bản tin nên bỏ qua.
+resources (text) → tai-nguyen · announcements/cohort_*_common_announcements →
+thong-bao:all|3|4 (được tiêu thụ bởi bước extract lịch học, xem
+ingest.agents.schedule_extractor — KHÔNG phải bị bỏ qua). Các kênh khác trong
+manifest (general, questions…) không thuộc pipeline nào ở trên nên bỏ qua.
 
 Đặc thù dữ liệu crawl (Selenium không thu được mọi field):
 - author luôn null → "(ẩn danh)" / role "Học viên".
