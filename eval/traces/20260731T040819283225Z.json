@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-07-31T04:08:19.283225+00:00",
+  "question": "Workshop có bắt buộc tham gia không?",
+  "action": "answer",
+  "provider": null,
+  "answer": "Khuyến khích tham gia trực tiếp; nếu bận có thể xem record (đăng trong vòng 24h tại #tài-nguyên).",
+  "citations": [
+    "#thông-báo"
+  ],
+  "confidence": 0.75
+}
