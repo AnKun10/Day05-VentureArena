@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Bookmark, ExternalLink, Flame, Heart, Inbox, Loader2, MessageSquare, Newspaper, Sparkles } from "lucide-react";
+import { Bookmark, ExternalLink, Flame, Heart, Inbox, Loader2, MessageSquare, Newspaper, Search, Sparkles } from "lucide-react";
 import { NEWS, NEWS_TAGS, ROLE_COLORS, isHot, tagOf, thumb } from "../data/mock.js";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
@@ -46,6 +46,8 @@ export default function NewsPage({ users, currentUser, onSelectUser, refreshUser
   // Daily AI News (undefined=đang tải, []=chưa có, [...]=danh sách)
   const [aiNews, setAiNews] = useState(undefined);
   const aiSeq = useRef(0);
+  const [searchQ, setSearchQ] = useState("");
+  const [searchResults, setSearchResults] = useState(null);
   const [bioDraft, setBioDraft] = useState("");
   const [bioOpen, setBioOpen] = useState(false);
   const recSeq = useRef(0);
@@ -193,6 +195,31 @@ export default function NewsPage({ users, currentUser, onSelectUser, refreshUser
     () => sourceNews.filter((n) => tag === "all" || n.tags.includes(tag)),
     [sourceNews, tag]
   );
+
+  // Tìm kiếm cộng đồng: hybrid (lexical + semantic) RRF ở backend theo heading +
+  // tóm tắt (KHÔNG dùng comment). Debounce 350ms; lỗi/offline → lọc client.
+  useEffect(() => {
+    const q = searchQ.trim();
+    if (!q) {
+      setSearchResults(null);
+      return;
+    }
+    const t = setTimeout(() => {
+      api
+        .newsSearch(q, 20)
+        .then((list) => setSearchResults(list.map(fromApi)))
+        .catch(() =>
+          setSearchResults(
+            sourceNews.filter((n) =>
+              `${n.title} ${n.aiSummary || ""}`.toLowerCase().includes(q.toLowerCase())
+            )
+          )
+        );
+    }, 350);
+    return () => clearTimeout(t);
+  }, [searchQ, sourceNews]);
+
+  const displayFeed = searchResults ?? feed;
 
   const renderHotCards = () => (
     <div className="grid gap-2.5 sm:grid-cols-3">
@@ -375,24 +402,42 @@ export default function NewsPage({ users, currentUser, onSelectUser, refreshUser
         </div>
       )}
 
-      {/* Filter theo tag (taxonomy 10 tag — AI gắn, 1 bài có thể nhiều tag) */}
-      <div className="mb-4 flex flex-wrap gap-1.5">
-        <TagChip active={tag === "all"} onClick={() => setTag("all")} label="Tất cả" />
-        {NEWS_TAGS.map((t) => (
-          <TagChip
-            key={t.id}
-            active={tag === t.id}
-            onClick={() => setTag(t.id)}
-            label={t.label}
-            color={t.color}
-            icon={TAG_ICONS[t.id]}
-          />
-        ))}
+      {/* Tìm kiếm cộng đồng — hybrid (lexical + semantic) RRF theo heading + tóm tắt */}
+      <div className="relative mb-3">
+        <Search className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+        <input
+          value={searchQ}
+          onChange={(e) => setSearchQ(e.target.value)}
+          placeholder="Tìm bài trong cộng đồng (hybrid search)…"
+          className="h-9 w-full rounded-lg border bg-background pr-3 pl-8 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+        />
       </div>
+
+      {searchResults === null ? (
+        <div className="mb-4 flex flex-wrap gap-1.5">
+          <TagChip active={tag === "all"} onClick={() => setTag("all")} label="Tất cả" />
+          {NEWS_TAGS.map((t) => (
+            <TagChip
+              key={t.id}
+              active={tag === t.id}
+              onClick={() => setTag(t.id)}
+              label={t.label}
+              color={t.color}
+              icon={TAG_ICONS[t.id]}
+            />
+          ))}
+        </div>
+      ) : (
+        <p className="mb-3 text-[11px] text-muted-foreground">
+          Kết quả tìm kiếm cho{" "}
+          <span className="font-medium text-foreground">“{searchQ}”</span> · {displayFeed.length} bài
+          (hybrid + RRF)
+        </p>
+      )}
 
       {/* Feed */}
       <div className="space-y-3">
-        {feed.map((n) => (
+        {displayFeed.map((n) => (
           <NewsCard
             key={n.id}
             n={n}
@@ -401,10 +446,14 @@ export default function NewsPage({ users, currentUser, onSelectUser, refreshUser
             onOpen={() => openDetail(n)}
           />
         ))}
-        {feed.length === 0 && (
+        {displayFeed.length === 0 && (
           <div className="flex flex-col items-center gap-2 py-16 text-muted-foreground">
             <Inbox className="size-8" />
-            <p className="text-sm">Chưa có tin thuộc tag này.</p>
+            <p className="text-sm">
+              {searchResults !== null
+                ? "Không tìm thấy bài nào phù hợp."
+                : "Chưa có tin thuộc tag này."}
+            </p>
           </div>
         )}
       </div>

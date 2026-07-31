@@ -31,5 +31,7 @@ export const api = {
   schedule: (id, from, to) =>
     j(`${API_BASE}/api/schedule?user_id=${id}&from=${from}&to=${to}`),
   resources: () => j(`${API_BASE}/api/resources`),
-  aiNews: (id) => j(`${API_BASE}/api/ai-news?user_id=${id}`),
+  aiNews: (id, k = 3) => j(`${API_BASE}/api/ai-news?user_id=${id}&k=${k}`),
+  newsSearch: (q, k = 20) =>
+    j(`${API_BASE}/api/news/search?q=${encodeURIComponent(q)}&k=${k}`),
 };
