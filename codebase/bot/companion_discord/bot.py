@@ -13,11 +13,29 @@ from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
 
-from .formatting import format_digest, format_schedule
+from .formatting import digest_embed, schedule_embed
 
 
 BOT_ROOT = Path(__file__).resolve().parents[1]
 load_dotenv(BOT_ROOT / ".env")
+
+_VN_DAYS = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"]
+
+
+def _date_label(iso_date: str) -> str:
+    try:
+        d = datetime.strptime(iso_date, "%Y-%m-%d")
+        return f"{_VN_DAYS[d.weekday()]} · {d.strftime('%d/%m/%Y')}"
+    except ValueError:
+        return iso_date
+
+
+def _embed_from(data: dict) -> discord.Embed:
+    embed = discord.Embed(title=data["title"], color=data["color"],
+                          description=data.get("description"))
+    for field in data.get("fields", []):
+        embed.add_field(name=field["name"], value=field["value"], inline=field["inline"])
+    return embed
 
 
 def _request_json(url: str, payload: dict | None = None) -> dict:
@@ -70,11 +88,11 @@ def create_bot() -> commands.Bot:
         try:
             if choice == "personalize":
                 items = await asyncio.to_thread(_request_json, f"{api_url}/api/recommendations?user_id={user}&k=10")
-                text = format_digest(items, personalized=True)
+                embed = digest_embed(items, personalized=True)
             else:
                 items = await asyncio.to_thread(_request_json, f"{api_url}/api/news")
-                text = format_digest(items[:10], personalized=False)
-            await interaction.followup.send(_text(text), ephemeral=True)
+                embed = digest_embed(items[:10], personalized=False)
+            await interaction.followup.send(embed=_embed_from(embed), ephemeral=True)
         except Exception:
             await interaction.followup.send("Chưa kết nối được Companion. Hãy thử lại sau.", ephemeral=True)
 
@@ -87,7 +105,8 @@ def create_bot() -> commands.Bot:
         try:
             items = await asyncio.to_thread(_request_json, f"{api_url}/api/schedule?user_id={user}&from={d}&to={d}")
             settings = await asyncio.to_thread(_request_json, f"{api_url}/api/users/{user}/settings")
-            await interaction.followup.send(_text(format_schedule(items, d, settings["cohort"])), ephemeral=True)
+            embed = schedule_embed(items, _date_label(d), settings["cohort"])
+            await interaction.followup.send(embed=_embed_from(embed), ephemeral=True)
         except Exception:
             await interaction.followup.send("Chưa kết nối được Companion. Hãy thử lại sau.", ephemeral=True)
 
