@@ -80,6 +80,37 @@ const fromApiSession = (item) => {
   };
 };
 
+// Chia cột cho các buổi trùng giờ trong 1 ngày (kiểu Google Calendar): các
+// block giao nhau về thời gian được xếp cạnh nhau thay vì đè full-width lên
+// nhau. Trả về Map(session -> {col, ncols}) — col: thứ tự cột, ncols: tổng số
+// cột của cụm giao nhau chứa buổi đó.
+const layoutDay = (sessions) => {
+  const evs = [...sessions].sort((a, b) => a.start - b.start || b.end - a.end);
+  const pos = new Map();
+  let cluster = []; // [{s, col}] của cụm giao nhau hiện tại
+  let cols = []; // giờ kết thúc muộn nhất từng cột trong cụm
+  let clusterEnd = -Infinity;
+  const flush = () => {
+    for (const c of cluster) pos.set(c.s, { col: c.col, ncols: cols.length });
+    cluster = [];
+    cols = [];
+  };
+  for (const s of evs) {
+    if (cluster.length && s.start >= clusterEnd) flush();
+    let col = cols.findIndex((end) => s.start >= end);
+    if (col === -1) {
+      col = cols.length;
+      cols.push(s.end);
+    } else {
+      cols[col] = s.end;
+    }
+    cluster.push({ s, col });
+    clusterEnd = cluster.length === 1 ? s.end : Math.max(clusterEnd, s.end);
+  }
+  flush();
+  return pos;
+};
+
 export default function CalendarPage({ currentUser }) {
   const [weekOffset, setWeekOffset] = useState(0);
   const [selected, setSelected] = useState(null);
@@ -239,18 +270,23 @@ export default function CalendarPage({ currentUser }) {
                   </div>
                 )}
 
-                {sessionsByDay[di].map((s) => {
+                {(() => {
+                  const layout = layoutDay(sessionsByDay[di]);
+                  return sessionsByDay[di].map((s) => {
                   const t = typeStyle(s.type);
                   const top = (s.start - START_H) * HPX + 2;
                   const height = (s.end - s.start) * HPX - 5;
+                  const { col, ncols } = layout.get(s) ?? { col: 0, ncols: 1 };
                   return (
                     <button
                       key={s.key ?? s.code}
                       onClick={() => setSelected(s)}
-                      className="absolute right-1.5 left-1 overflow-hidden rounded-md px-2 py-1 text-left transition-all outline-none hover:ring-1 hover:ring-foreground/20 focus-visible:ring-2 focus-visible:ring-ring"
+                      className="absolute overflow-hidden rounded-md px-2 py-1 text-left transition-all outline-none hover:ring-1 hover:ring-foreground/20 focus-visible:ring-2 focus-visible:ring-ring"
                       style={{
                         top,
                         height,
+                        left: `calc(${(col / ncols) * 100}% + 4px)`,
+                        width: `calc(${100 / ncols}% - ${col === ncols - 1 ? 10 : 6}px)`,
                         background: t.color + "1c",
                         borderLeft: `2px solid ${t.color}`,
                       }}
@@ -273,7 +309,8 @@ export default function CalendarPage({ currentUser }) {
                       )}
                     </button>
                   );
-                })}
+                  });
+                })()}
               </div>
             );
           })}
