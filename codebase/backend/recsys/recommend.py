@@ -3,7 +3,7 @@ import re
 import unicodedata
 from datetime import datetime
 
-W_SIM, W_ENG, W_REC = 0.5, 0.25, 0.25
+W_SIM, W_ENG, W_REC = 0.6, 0.2, 0.2
 # Trọng số nhánh keyword fallback (khi không có vector): ưu tiên từ khoá trùng,
 # vẫn tính tương tác + độ mới. Không có bio → phần kw = 0 → hot ranking.
 W_KW, W_KW_ENG, W_KW_REC = 0.5, 0.25, 0.25
@@ -36,18 +36,31 @@ def hybrid_scores(user_vec, items, now: datetime) -> list[dict]:
     engs = [math.log1p((p.get("hearts") or 0) + (p.get("comment_count") or 0))
             for _, _, p in items]
     max_eng = max(engs) if engs else 0.0
+    raw_sims = [cosine(user_vec, vec) if user_vec is not None else 0.0
+                for _, vec, _ in items]
+    # Chuẩn hoá sim theo POOL (min-max): cosine tuyệt đối của text-embedding có
+    # nền cao và phụ thuộc chủ đề, nên với user niche mỏng trong corpus mọi sim
+    # dồn vào dải hẹp (vd 0.36–0.51) → eng+rec (giống nhau cho mọi user) lấn át
+    # → thứ hạng hội tụ về "hot chung". Min-max rút tín hiệu TƯƠNG ĐỐI: bài
+    # giống user NHẤT → 1.0, ít nhất → 0.0, để cá nhân hoá thực sự dẫn dắt.
+    if user_vec is not None and raw_sims:
+        lo, hi = min(raw_sims), max(raw_sims)
+        span = hi - lo
+        norm_sims = [((s - lo) / span if span else 0.0) for s in raw_sims]
+    else:
+        norm_sims = raw_sims
     out = []
-    for (mid, vec, payload), raw_eng in zip(items, engs):
-        sim = cosine(user_vec, vec) if user_vec is not None else 0.0
+    for (mid, vec, payload), raw_eng, raw_sim, nsim in zip(items, engs, raw_sims, norm_sims):
         eng = raw_eng / max_eng if max_eng else 0.0
         rec = math.exp(-_age_hours(payload["created_at"], now) / TAU_HOURS)
         if user_vec is not None:
-            score = W_SIM * sim + W_ENG * eng + W_REC * rec
+            score = W_SIM * nsim + W_ENG * eng + W_REC * rec
         else:
             score = 0.5 * eng + 0.5 * rec
         score = max(0.0, score)
+        # parts.sim = cosine THÔ (để hiển thị % trung thực); ranking dùng nsim.
         out.append({"message_id": mid, "vector": vec, "score": score,
-                    "parts": {"sim": sim, "eng": eng, "rec": rec}})
+                    "parts": {"sim": raw_sim, "eng": eng, "rec": rec}})
     return out
 
 

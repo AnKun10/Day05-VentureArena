@@ -49,10 +49,13 @@ def test_mmr_diversifies():
     assert picked[0] == "a1" and picked[1] == "b"
 
 
-def test_negative_sim_clamped_to_zero_and_never_boosted():
+def test_negative_sim_ranks_below_positive():
+    # cosine thô hiển thị vẫn giữ dấu; sau min-max sim, bài anti-tương-quan luôn
+    # xếp dưới bài trùng hướng và không bao giờ được sim ưu ái.
     scored = hybrid_scores([1, 0], [item("anti", [-1, 0]), item("pos", [1, 0])], NOW)
     by = {s["message_id"]: s for s in scored}
-    assert by["anti"]["score"] == 0.0                  # clamp
+    assert by["anti"]["parts"]["sim"] == -1.0          # hiển thị cosine thô
+    assert by["anti"]["score"] < by["pos"]["score"]
     picked = [s["message_id"] for s in mmr_select(scored, k=2)]
     assert picked == ["pos", "anti"]                   # anti không bao giờ vượt pos
 

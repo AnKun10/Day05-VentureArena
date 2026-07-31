@@ -54,11 +54,17 @@ người dùng tới model/retrieval, áp cho cả `PUT /bio` (→ HTTP 422) và
   độ dài. Defense-in-depth: prompt suy hồ sơ cũng coi bio là DỮ LIỆU, phớt lờ mọi
   câu lệnh nhúng trong đó.
 
-Công thức điểm: `score = 0.5*sim(cosine user↔news) + 0.25*eng(log1p(hearts+comments),
-chuẩn hoá theo max) + 0.25*rec(exp(-tuổi_bài/72h))`, sau đó chọn top-k bằng MMR
-(`λ=0.15` — mức đa dạng thấp, chỉnh trong `recsys/recommend.py::MMR_LAMBDA`)
-để giảm trùng lặp giữa các bài được chọn (phạt các ứng viên gần với bài
-đã chọn trước theo cosine similarity).
+Công thức điểm: `score = 0.6*sim_n + 0.2*eng(log1p(hearts+comments), chuẩn hoá
+theo max) + 0.2*rec(exp(-tuổi_bài/72h))`, sau đó chọn top-k bằng MMR (`λ=0.15`
+— mức đa dạng thấp, chỉnh trong `recsys/recommend.py::MMR_LAMBDA`).
+
+`sim_n` là cosine(user↔news) **chuẩn hoá min-max trong pool** (bài giống user
+nhất → 1.0, ít nhất → 0.0). Lý do: cosine tuyệt đối của embedding có nền cao và
+phụ thuộc chủ đề, nên với user có niche mỏng trong corpus mọi sim dồn vào dải
+hẹp (vd 0.36–0.51); nếu dùng sim thô, eng+rec (giống nhau cho MỌI user) sẽ lấn
+át và thứ hạng hội tụ về "hot chung" — mọi user nhận gần như cùng danh sách.
+Min-max rút tín hiệu TƯƠNG ĐỐI để cá nhân hoá thực sự dẫn dắt. `parts.sim` trả
+về vẫn là cosine THÔ (hiển thị % trung thực), chỉ ranking dùng `sim_n`.
 
 Qdrant chạy embedded trong 1 process (chưa hỗ trợ đa process cùng mở 1
 `qdrant_data/`) — muốn chạy `python -m ingest` (embed) thì tắt `uvicorn` trước, hoặc
