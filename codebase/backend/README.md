@@ -73,14 +73,17 @@ Lịch gồm 2 phần ghép lại theo `date`:
   buổi LAB (09:00–13:00, phòng `lab_room`) + 1 buổi LT (14:00–18:00, phòng
   `lt_room`), hình thức Offline, tài liệu tĩnh đính kèm sẵn (LT →
   `https://vlearn.dev`, LAB → `https://codelabs.vlearn.dev/codelab`).
-- **Buổi tối trích từ thông báo** (WS/OH/MD, cộng `OTHER` cho deadline/checkpoint
-  không khớp 3 loại trên): agent `ingest.agents.schedule_extractor` đọc bài đăng
-  ở các channel `thong-bao`, extract-once — bài đã trích lưu trong bảng đánh dấu
-  riêng (`schedule_extracted`) nên không gọi AI lại cho bài cũ, giống cơ chế
-  enrich-once ở trên. Nếu 1 buổi LAB/LT trong tuần có announcement đổi phòng/host
-  riêng (override phòng/host/zoom_url), event trích được sẽ ghi đè field tương ứng lên block
-  recurring cùng ngày thay vì tạo dòng riêng; các loại khác (WS/OH/MD/OTHER)
-  được dedup theo `(type, date, start)` trước khi ghép vào lịch.
+- **Buổi tối trích từ thông báo** (WS/OH/MD): agent
+  `ingest.agents.schedule_extractor` đọc bài đăng ở các channel `thong-bao`,
+  extract-once — bài đã trích lưu trong bảng đánh dấu riêng
+  (`schedule_extracted`) nên không gọi AI lại cho bài cũ, giống cơ chế
+  enrich-once ở trên. Type `OTHER` là ngăn chứa deadline/checkpoint (có mốc
+  thời gian nhưng không phải buổi học) — lưu trong DB nhưng `build_schedule`
+  lọc bỏ, không bao giờ hiển thị thành buổi. Nếu 1 buổi LAB/LT trong tuần có
+  announcement đổi phòng/host riêng (override phòng/host/zoom_url), event
+  trích được sẽ ghi đè field tương ứng lên block recurring cùng ngày thay vì
+  tạo dòng riêng; WS/OH/MD được dedup theo `(type, date, start)` trước khi
+  ghép vào lịch.
 
 `GET /api/schedule` không cần `OPENAI_API_KEY` (build từ dữ liệu đã trích sẵn
 trong `companion.db`); chỉ `python -m ingest` (bước extract) mới gọi AI.

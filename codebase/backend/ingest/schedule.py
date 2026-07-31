@@ -78,6 +78,10 @@ def _materials_for_event(event: dict, resources: list[dict]) -> list[dict]:
 
 def build_schedule(settings: dict, events: list[dict], resources: list[dict],
                    date_from: str, date_to: str) -> list[dict]:
+    # OTHER là ngăn chứa các thông báo có mốc thời gian nhưng KHÔNG phải buổi
+    # học (checkpoint, hạn chót nộp bài...) — lưu trong DB để tra cứu nhưng
+    # không bao giờ hiển thị thành buổi trên lịch/bot.
+    events = [e for e in events if e.get("type") != "OTHER"]
     lab_lt_events = [e for e in events if e.get("type") in ("LAB", "LT")]
     evening_events = _dedup_events([e for e in events if e.get("type") not in ("LAB", "LT")])
     events = lab_lt_events + evening_events

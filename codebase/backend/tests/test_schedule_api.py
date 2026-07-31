@@ -75,6 +75,18 @@ def test_lab_lt_partial_updates_both_apply():
     assert len(items) == 2                                  # không sinh block LT thừa
 
 
+def test_build_schedule_drops_other_events():
+    # OTHER (checkpoint/deadline) lưu DB nhưng không phải buổi học → không hiển thị
+    events = [
+        {"type": "OTHER", "title": "CP3: Đánh giá sản phẩm", "date": "2026-07-27",
+         "start": "10:30", "end": None, "cohort": "all", "format": "Zoom",
+         "zoom_url": None, "host": None, "session_code": None, "jump_url": None,
+         "location": None},
+    ]
+    items = build_schedule(SET4, events, [], "2026-07-27", "2026-07-27")
+    assert [i["type"] for i in items] == ["LAB", "LT"]      # chỉ còn lịch cố định
+
+
 def _client(tmp_path, monkeypatch):
     store = Store(str(tmp_path / "t.db"))
     app.dependency_overrides[get_store] = lambda: store
