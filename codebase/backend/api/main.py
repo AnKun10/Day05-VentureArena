@@ -117,6 +117,18 @@ def put_bio(user_id: str, body: BioBody, store: Store = Depends(get_store)):
     return {"ok": True}
 
 
+class AvatarBody(BaseModel):
+    name: str | None = None
+    avatar_url: str | None = None
+
+
+@app.put("/api/users/{user_id}/avatar")
+def put_avatar(user_id: str, body: AvatarBody, store: Store = Depends(get_store)):
+    """Bot đồng bộ tên + avatar Discord của user (để UI hiển thị đúng người)."""
+    store.set_avatar(user_id, body.name, body.avatar_url)
+    return {"ok": True}
+
+
 @app.get("/api/users/{user_id}/bookmarks")
 def bookmarks(user_id: str, store: Store = Depends(get_store)):
     return store.list_bookmarks(user_id)
@@ -174,6 +186,26 @@ def get_schedule(user_id: str | None = None, cohort: str | None = None,
     events = store.list_schedule_events(settings["cohort"], from_, to)
     resources = store.list_resources()
     return build_schedule(settings, events, resources, from_, to)
+
+
+@app.get("/api/ai-news")
+def ai_news(user_id: str, store: Store = Depends(get_store)):
+    """Daily AI News ca nhan hoa - cache theo (user, ngay). Lan dau trong ngay
+    chay agent (Tavily crawl + verify source); cac lan sau lay cache."""
+    store.ensure_user(user_id)
+    today = datetime.now().strftime("%Y-%m-%d")
+    cached = store.get_ai_news(user_id, today)
+    if cached:
+        return {"date": today, "items": cached, "cached": True}
+    from ai_news import generate_daily_news
+    try:
+        items = generate_daily_news(store, user_id, Config.from_env())
+    except Exception as exc:
+        print(f"[ai-news] generate failed: {exc}")
+        return {"date": today, "items": [], "cached": False}
+    if items:
+        store.save_ai_news(user_id, today, items)
+    return {"date": today, "items": items, "cached": False}
 
 
 @app.get("/api/recommendations")

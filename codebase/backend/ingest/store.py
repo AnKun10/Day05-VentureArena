@@ -47,6 +47,11 @@ CREATE TABLE IF NOT EXISTS qa_threads(
 CREATE TABLE IF NOT EXISTS ask_embeddings(
   doc_key TEXT PRIMARY KEY, embedding TEXT
 );
+CREATE TABLE IF NOT EXISTS ai_news(
+  user_id TEXT, date TEXT, rank INTEGER,
+  title TEXT, url TEXT, source TEXT, summary TEXT, created_at TEXT,
+  PRIMARY KEY(user_id, date, rank)
+);
 """
 
 
@@ -69,6 +74,8 @@ class Store:
             self.conn.execute("ALTER TABLE users ADD COLUMN lt_room TEXT DEFAULT 'D302'")
         if "lab_room" not in user_cols:
             self.conn.execute("ALTER TABLE users ADD COLUMN lab_room TEXT DEFAULT 'D305'")
+        if "avatar_url" not in user_cols:
+            self.conn.execute("ALTER TABLE users ADD COLUMN avatar_url TEXT")
         self.conn.commit()
 
     def close(self) -> None:
@@ -203,6 +210,23 @@ class Store:
         return {r["doc_key"]: json.loads(r["embedding"])
                 for r in self.conn.execute("SELECT doc_key, embedding FROM ask_embeddings")}
 
+    # ---------- Daily AI News (cache theo user + ngày) ----------
+
+    def get_ai_news(self, user_id: str, date: str) -> list[dict]:
+        return [dict(r) for r in self.conn.execute(
+            "SELECT rank, title, url, source, summary FROM ai_news "
+            "WHERE user_id=? AND date=? ORDER BY rank", (user_id, date))]
+
+    def save_ai_news(self, user_id: str, date: str, items: list[dict]) -> None:
+        self.conn.execute("DELETE FROM ai_news WHERE user_id=? AND date=?", (user_id, date))
+        for i, it in enumerate(items):
+            self.conn.execute(
+                "INSERT INTO ai_news(user_id, date, rank, title, url, source, summary, created_at)"
+                " VALUES(?,?,?,?,?,?,?,?)",
+                (user_id, date, i, it.get("title"), it.get("url"), it.get("source"),
+                 it.get("summary"), _now()))
+        self.conn.commit()
+
     # ---------- recsys: users / bookmarks / embedding flags ----------
 
     def upsert_user(self, user_id: str, name: str, bio: str = "",
@@ -228,6 +252,15 @@ class Store:
     def set_bio(self, user_id: str, bio: str, source: str = "manual") -> None:
         self.conn.execute("UPDATE users SET bio=?, bio_source=? WHERE user_id=?",
                           (bio, source, user_id))
+        self.conn.commit()
+
+    def set_avatar(self, user_id: str, name: str | None, avatar_url: str | None) -> None:
+        """Đồng bộ tên hiển thị + avatar Discord (bot gửi lên khi user gọi lệnh)."""
+        self.ensure_user(user_id, name)
+        if name:
+            self.conn.execute("UPDATE users SET name=? WHERE user_id=?", (name, user_id))
+        if avatar_url:
+            self.conn.execute("UPDATE users SET avatar_url=? WHERE user_id=?", (avatar_url, user_id))
         self.conn.commit()
 
     def toggle_bookmark(self, user_id: str, message_id: str) -> bool:

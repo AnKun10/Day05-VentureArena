@@ -110,10 +110,21 @@ def create_bot() -> commands.Bot:
     bot = CompanionBot(command_prefix="/", intents=discord.Intents.none())
     api_url = os.environ["COMPANION_API_URL"].rstrip("/")
 
+    def _sync_user(interaction):
+        # Đồng bộ tên + avatar Discord của user lên backend để UI hiển thị đúng người. Non-fatal.
+        try:
+            _request_json(
+                f"{api_url}/api/users/{quote(interaction.user.name)}/avatar",
+                {"name": interaction.user.display_name,
+                 "avatar_url": str(interaction.user.display_avatar.url)}, "PUT")
+        except Exception:
+            pass
+
     @bot.tree.command(name="ask", description="Hỏi về lịch, tài liệu, hoặc logistics của khoá")
     @app_commands.describe(question="Câu hỏi của bạn")
     async def ask(interaction: discord.Interaction, question: str):
         await interaction.response.defer(thinking=True, ephemeral=True)
+        asyncio.create_task(asyncio.to_thread(_sync_user, interaction))
         try:
             # /ask là agent nhiều bước (embed + tool + sinh câu trả lời) → cho 45s
             result = await asyncio.to_thread(_request_json, f"{api_url}/api/ask", {"question": question}, None, 45)
@@ -133,6 +144,7 @@ def create_bot() -> commands.Bot:
     ])
     async def digest(interaction: discord.Interaction, option: app_commands.Choice[str] | None = None):
         await interaction.response.defer(thinking=True, ephemeral=True)
+        asyncio.create_task(asyncio.to_thread(_sync_user, interaction))
         choice = option.value if option else "latest"
         user = quote(interaction.user.name)
         try:
@@ -156,6 +168,7 @@ def create_bot() -> commands.Bot:
     @app_commands.describe(date="Ngày xem lịch, dạng YYYY-MM-DD (mặc định hôm nay)")
     async def schedule(interaction: discord.Interaction, date: str | None = None):
         await interaction.response.defer(thinking=True, ephemeral=True)
+        asyncio.create_task(asyncio.to_thread(_sync_user, interaction))
         user = quote(interaction.user.name)
         d = date or datetime.now().strftime("%Y-%m-%d")
         try:
@@ -170,6 +183,7 @@ def create_bot() -> commands.Bot:
     @app_commands.describe(text="Bio mới (bỏ trống để xem bio hiện tại). Gợi ý: copy About Me trên profile Discord của bạn")
     async def bio(interaction: discord.Interaction, text: str | None = None):
         await interaction.response.defer(thinking=True, ephemeral=True)
+        asyncio.create_task(asyncio.to_thread(_sync_user, interaction))
         user = quote(interaction.user.name)
         try:
             # GET settings trước để đảm bảo user đã tồn tại trong DB (auto-create)
@@ -191,6 +205,7 @@ def create_bot() -> commands.Bot:
 
     @bot.tree.command(name="hub", description="Mở Companion Web UI")
     async def hub(interaction: discord.Interaction):
+        asyncio.create_task(asyncio.to_thread(_sync_user, interaction))
         ui_url = os.environ.get("COMPANION_UI_URL", "http://localhost:5173")
         await interaction.response.send_message(ui_url + "?user=" + quote(interaction.user.name), ephemeral=True)
 
