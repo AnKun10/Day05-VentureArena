@@ -3,8 +3,30 @@
 from fastapi.testclient import TestClient
 
 from ask import AskResult, answer_question
-from ask.agent import _format_qa, _format_resources
+from ask.agent import _format_qa, _format_resources, enforce_citations
 import ask
+
+
+def test_enforce_citations_backfills_from_tool_urls():
+    # answer thiếu citation nhưng tool đã trả URL → back-fill (agent quên trích)
+    r = AskResult(action="answer", answer_vi="đáp", citations=[])
+    out = enforce_citations(r, ["https://d/1", "https://d/1", "https://d/2"])
+    assert out.action == "answer" and out.citations == ["https://d/1", "https://d/2"]
+
+
+def test_enforce_citations_downgrades_answer_without_source():
+    # answer thiếu citation VÀ tool không trả URL nào → nghi bịa → hạ no_info
+    r = AskResult(action="answer", answer_vi="đáp bịa", citations=[])
+    out = enforce_citations(r, [])
+    assert out.action == "no_info" and out.citations == [] and "chưa có thông tin" in out.answer_vi
+
+
+def test_enforce_citations_keeps_cited_and_nonanswer():
+    cited = AskResult(action="answer", answer_vi="đáp", citations=["u"])
+    assert enforce_citations(cited, []).citations == ["u"]
+    for act in ("no_info", "clarify", "refuse"):
+        r = AskResult(action=act, answer_vi="x", citations=[])
+        assert enforce_citations(r, ["https://d/1"]).action == act    # không đụng
 
 
 def test_format_qa_empty_and_nonempty():

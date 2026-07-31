@@ -50,7 +50,9 @@ def now_vn() -> str:
     return f"{_VN_DAYS[now.weekday()]}, {now.strftime('%Y-%m-%d %H:%M')} (giờ VN, UTC+7)"
 
 
-def _build_agent(store, cfg):
+def _build_agent(store, cfg, surfaced: list):
+    """surfaced: list tích luỹ URL mà tool đã trả cho agent (để guardrail sau
+    này back-fill citation / phát hiện answer không có nguồn)."""
     from agents import Agent, function_tool
     from recsys.embedder import embed_texts
 
@@ -67,16 +69,37 @@ def _build_agent(store, cfg):
     def search_qa(query: str) -> str:
         """Tra kênh hỏi-đáp và bản tin để tìm thông tin về AI, kiến thức kỹ
         thuật, chương trình học, logistics của khoá. `query` là từ khoá chính."""
-        return _format_qa(_search_qa(store, query, embed=_embed))
+        results = _search_qa(store, query, embed=_embed)
+        surfaced.extend(r["url"] for r in results if r.get("url"))
+        return _format_qa(results)
 
     @function_tool
     def search_resources(query: str) -> str:
         """Tra tài nguyên (slide, record/recording) và lịch (link Zoom, giờ,
         buổi) của khoá. `query` là từ khoá về tài liệu/buổi cần tìm."""
-        return _format_resources(_search_resources(store, query))
+        results = _search_resources(store, query)
+        surfaced.extend(r["url"] for r in results if r.get("url"))
+        return _format_resources(results)
 
     return Agent(name="companion_ask", instructions=ASK_V1, model=cfg.enrich_model,
                  tools=[current_datetime, search_qa, search_resources], output_type=AskResult)
+
+
+_NO_INFO = "Mình chưa có thông tin về việc này. Bạn thử hỏi trực tiếp ở kênh #hỏi-đáp nhé."
+
+
+def enforce_citations(result: AskResult, surfaced: list) -> AskResult:
+    """Guardrail HẬU-XỬ-LÝ chống bịa: một 'answer' phải có nguồn.
+    - answer đã có citation → giữ nguyên.
+    - answer thiếu citation NHƯNG tool có trả URL → back-fill (agent quên trích).
+    - answer thiếu citation VÀ không có URL nào từ tool → agent trả lời không
+      nguồn (nghi bịa) → hạ xuống no_info an toàn."""
+    if result.action != "answer" or result.citations:
+        return result
+    urls = list(dict.fromkeys(u for u in surfaced if isinstance(u, str) and u.startswith("http")))
+    if urls:
+        return result.model_copy(update={"citations": urls[:3]})
+    return result.model_copy(update={"action": "no_info", "answer_vi": _NO_INFO, "citations": []})
 
 
 def _extract_meta(result) -> dict:
@@ -100,11 +123,14 @@ def _extract_meta(result) -> dict:
 
 
 def answer_question(store, question: str, cfg, runner=None) -> tuple[AskResult, dict]:
-    """Trả (AskResult, meta). meta = {tool_calls, output_tokens, input_tokens}."""
+    """Trả (AskResult, meta). meta = {tool_calls, output_tokens, input_tokens}.
+    Áp guardrail hậu-xử-lý enforce_citations trước khi trả."""
     if runner is not None:
         r = runner(store, question)
-        return r if isinstance(r, tuple) else (r, {})
+        result, meta = r if isinstance(r, tuple) else (r, {})
+        return enforce_citations(result, []), meta
     from agents import Runner
-    agent = _build_agent(store, cfg)
+    surfaced: list = []
+    agent = _build_agent(store, cfg, surfaced)
     result = Runner.run_sync(agent, question)
-    return result.final_output, _extract_meta(result)
+    return enforce_citations(result.final_output, surfaced), _extract_meta(result)
