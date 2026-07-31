@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-07-31T03:45:39.851766+00:00",
+  "question": "WS-3 deadline nộp báo cáo là khi nào?",
+  "action": "answer",
+  "provider": null,
+  "answer": "q: Nộp bài lab ở đâu, deadline khi nào?",
+  "citations": [
+    "faq.yaml"
+  ],
+  "confidence": 1.0
+}

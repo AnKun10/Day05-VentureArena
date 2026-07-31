@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-07-31T03:45:40.104640+00:00",
+  "question": "Đăng ký slot office hour thế nào?",
+  "action": "answer",
+  "provider": null,
+  "answer": "q: Đăng ký slot office hour thế nào?",
+  "citations": [
+    "faq.yaml"
+  ],
+  "confidence": 1.0
+}

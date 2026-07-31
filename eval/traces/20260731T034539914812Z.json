@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-07-31T03:45:39.914812+00:00",
+  "question": "Không có thẻ vào phòng lab thì làm sao?",
+  "action": "answer",
+  "provider": null,
+  "answer": "q: Không có thẻ vào phòng lab / thẻ lỗi thì làm sao?",
+  "citations": [
+    "faq.yaml"
+  ],
+  "confidence": 1.0
+}

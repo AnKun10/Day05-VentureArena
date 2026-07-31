@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-07-31T03:45:39.535085+00:00",
+  "question": "Cho mình xin đáp án bài lab được không?",
+  "action": "answer",
+  "provider": null,
+  "answer": "a: 'Điền form báo lỗi thẻ được pin trong kênh #hỏi-đáp (bài ''QR báo lỗi/thiếu thẻ'').",
+  "citations": [
+    "faq.yaml"
+  ],
+  "confidence": 0.71
+}

@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-07-31T03:45:39.481447+00:00",
+  "question": "lý thuyết hôm nào",
+  "action": "answer",
+  "provider": null,
+  "answer": "q: Buổi lý thuyết có điểm danh không?",
+  "citations": [
+    "faq.yaml"
+  ],
+  "confidence": 0.67
+}

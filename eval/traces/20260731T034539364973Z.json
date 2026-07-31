@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-07-31T03:45:39.364973+00:00",
+  "question": "Buổi lý thuyết tuần này học gì?",
+  "action": "answer",
+  "provider": null,
+  "answer": "q: Buổi lý thuyết có điểm danh không?",
+  "citations": [
+    "faq.yaml"
+  ],
+  "confidence": 1.0
+}

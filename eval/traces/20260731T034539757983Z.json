@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-07-31T03:45:39.757983+00:00",
+  "question": "Lab-10 deadline khi nào?",
+  "action": "answer",
+  "provider": null,
+  "answer": "code: Lab-10",
+  "citations": [
+    "schedule.yaml"
+  ],
+  "confidence": 1.0
+}

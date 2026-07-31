@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-07-31T03:45:39.311560+00:00",
+  "question": "Hôm nay có thông báo gì mới không?",
+  "action": "answer",
+  "provider": null,
+  "answer": "a: 'Đăng ký qua link trong thông báo tuần ở #thông-báo; mỗi nhóm tối đa 1 slot /",
+  "citations": [
+    "faq.yaml"
+  ],
+  "confidence": 0.75
+}

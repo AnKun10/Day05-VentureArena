@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-07-31T03:45:40.150166+00:00",
+  "question": "Mentor duty là gì?",
+  "action": "answer",
+  "provider": null,
+  "answer": "q: Mentor duty là gì?",
+  "citations": [
+    "faq.yaml"
+  ],
+  "confidence": 1.0
+}

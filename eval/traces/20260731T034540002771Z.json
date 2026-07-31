@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-07-31T03:45:40.002771+00:00",
+  "question": "Kẹt kỹ thuật trong buổi lab thì gọi ai?",
+  "action": "answer",
+  "provider": null,
+  "answer": "q: Kẹt kỹ thuật trong buổi lab thì gọi ai?",
+  "citations": [
+    "faq.yaml"
+  ],
+  "confidence": 1.0
+}

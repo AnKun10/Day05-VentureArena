@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-07-31T03:45:40.053640+00:00",
+  "question": "Workshop có bắt buộc tham gia không?",
+  "action": "answer",
+  "provider": null,
+  "answer": "q: Workshop có bắt buộc tham gia không?",
+  "citations": [
+    "faq.yaml"
+  ],
+  "confidence": 1.0
+}
