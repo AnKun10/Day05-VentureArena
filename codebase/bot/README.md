@@ -21,6 +21,12 @@ masked link nên không sinh link preview) — build bởi
 `companion_discord.formatting.schedule_embed` / `digest_embed` (module thuần,
 test tại `tests/test_bot_formatting.py`).
 
+**Resilience:** `_request_json` giữ timeout 10s + retry 2 lần (backoff) cho lỗi
+tạm thời (mạng/timeout/5xx); lỗi 4xx (vd bio bị guardrail chặn) không retry mà
+hiển thị lý do từ server. `/digest personalize` nếu hỏng → tự hạ cấp về tin mới
+nhất kèm ghi chú. Nội dung bio/câu hỏi bị chặn (tục tĩu / prompt injection) được
+server guardrail xử lý; bot chỉ hiển thị lý do.
+
 - `/ask <question>` — hỏi Companion (RAG), trả lời kèm nguồn trích dẫn.
 - `/schedule [date]` — lịch học của người dùng theo ngày (`date` dạng `YYYY-MM-DD`,
   tuỳ chọn, mặc định là hôm nay theo giờ máy chạy bot). Gọi
