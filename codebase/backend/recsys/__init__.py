@@ -1,6 +1,6 @@
 from .embedder import embed_texts, news_text
 from .vectorstore import VectorStore
-from .recommend import cosine, hybrid_scores, mmr_select, recommend
+from .recommend import cosine, hybrid_scores, mmr_select, recommend, recommend_keyword
 from .profile import InterestProfile, compute_hash, ensure_profile
 
 __all__ = [
@@ -11,6 +11,7 @@ __all__ = [
     "hybrid_scores",
     "mmr_select",
     "recommend",
+    "recommend_keyword",
     "InterestProfile",
     "compute_hash",
     "ensure_profile",

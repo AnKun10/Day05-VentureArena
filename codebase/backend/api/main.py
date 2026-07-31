@@ -8,13 +8,26 @@ from pydantic import BaseModel
 from ingest.config import Config
 from ingest.schedule import build_schedule
 from ingest.store import Store
+from guardrails import check_bio, check_question
 
 import app as qa  # Q&A core POST /api/ask (Nghĩa) — mount vào cùng một server
 
 app = FastAPI(title="Companion API")
 app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173"],
                    allow_methods=["*"], allow_headers=["*"])
-app.add_api_route("/api/ask", qa.ask, methods=["POST"], response_model=qa.AskResponse)
+
+
+def guarded_ask(request: qa.AskRequest) -> qa.AskResponse:
+    """Bọc guardrail quanh /api/ask của Nghĩa: chặn nội dung không phù hợp /
+    prompt injection TRƯỚC khi vào RAG, không sửa logic bên trong."""
+    verdict = check_question(request.question)
+    if not verdict.ok:
+        return qa.AskResponse(action="blocked", answer=verdict.reason,
+                              citations=[], confidence=0.0)
+    return qa.ask(qa.AskRequest(question=verdict.text))
+
+
+app.add_api_route("/api/ask", guarded_ask, methods=["POST"], response_model=qa.AskResponse)
 
 
 def get_store() -> Store:
@@ -72,7 +85,17 @@ class BioBody(BaseModel):
 def put_bio(user_id: str, body: BioBody, store: Store = Depends(get_store)):
     if store.get_user(user_id) is None:
         raise HTTPException(404)
-    store.set_bio(user_id, body.bio)
+    verdict = check_bio(body.bio)
+    if not verdict.ok:
+        raise HTTPException(422, detail=verdict.reason)
+    store.set_bio(user_id, verdict.text)
+    # Suy hồ sơ sở thích NGAY khi lưu bio (thay vì lúc đọc recommendations) để
+    # /api/recommendations luôn nhanh (<1s) — non-fatal nếu OpenAI/Qdrant lỗi.
+    try:
+        from recsys import ensure_profile
+        ensure_profile(store, get_vectors(), Config.from_env(), user_id)
+    except Exception as exc:
+        print(f"[recsys] ensure_profile on bio-write failed: {exc}")
     return {"ok": True}
 
 
@@ -137,15 +160,27 @@ def get_schedule(user_id: str | None = None, cohort: str | None = None,
 
 @app.get("/api/recommendations")
 def recommendations(user_id: str, k: int = 6, store: Store = Depends(get_store)):
-    from recsys import ensure_profile, recommend
-    try:
-        vs = get_vectors()
-    except Exception as exc:
-        raise HTTPException(503, detail=f"vector store unavailable: {exc}")
+    """Không bao giờ 503. Chuỗi hạ cấp:
+      1) Qdrant + vector (hồ sơ đã suy lúc lưu bio) — tốt nhất.
+      2) Qdrant chết / user chưa có vector → xếp hạng bằng keyword (SQLite thuần).
+      3) Không có bio → keyword degenerate về hot ranking (tương tác + mới).
+    """
+    from recsys import ensure_profile, recommend, recommend_keyword
     _seed_users(store)
     store.ensure_user(user_id)
     try:
+        vs = get_vectors()
+    except Exception as exc:                    # Qdrant không sẵn sàng → keyword fallback
+        print(f"[recsys] vector store unavailable, keyword fallback: {exc}")
+        return recommend_keyword(store, user_id, k=k)
+    try:
+        # top-up hồ sơ nếu lỡ chưa suy (vd bio set qua đường khác); no-op nếu đã có
         ensure_profile(store, vs, Config.from_env(), user_id)
-    except Exception as exc:                    # inference lỗi → dùng profile cũ/fallback
-        print(f"[recsys] ensure_profile failed: {exc}")
-    return recommend(store, vs, user_id, k=k)
+    except Exception as exc:
+        print(f"[recsys] ensure_profile failed, dùng profile cũ/fallback: {exc}")
+    try:
+        results = recommend(store, vs, user_id, k=k)
+        return results if results else recommend_keyword(store, user_id, k=k)
+    except Exception as exc:                    # lỗi vector search bất ngờ → keyword fallback
+        print(f"[recsys] vector recommend failed, keyword fallback: {exc}")
+        return recommend_keyword(store, user_id, k=k)

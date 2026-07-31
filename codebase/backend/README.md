@@ -34,11 +34,25 @@ python -m recsys.smoke                  # smoke recsys thật (cần OPENAI_API_
 3 endpoint mới trong `api.main` (cộng thêm users/bookmarks để phục vụ chúng):
 - `GET /api/users` — danh sách user demo (seed tự động từ `recsys/seeds/users.json`
   qua `_seed_users` nếu bảng `users` rỗng); `PUT /api/users/{user_id}/bio` — cập nhật
-  bio thủ công (trigger tính lại profile ở lần gọi recommend kế tiếp).
+  bio thủ công. Suy hồ sơ (`ensure_profile`) chạy NGAY tại đây (write-time) nên
+  `/api/recommendations` về sau luôn nhanh (<1s), không phải chờ OpenAI lúc đọc.
 - `GET /api/users/{user_id}/bookmarks`, `PUT`/`DELETE .../bookmarks/{message_id}` —
   bookmark bài viết (bookmark cũng là tín hiệu đầu vào cho profile).
-- `GET /api/recommendations?user_id=&k=` — `ensure_profile` (suy luận lại interest
-  summary/tags từ bio + bookmark khi hash đổi) rồi `recommend` trả về top-k bài.
+- `GET /api/recommendations?user_id=&k=` — **không bao giờ 503**. Chuỗi hạ cấp:
+  (1) Qdrant + vector (hồ sơ đã suy lúc lưu bio); (2) Qdrant chết / user chưa có
+  vector → `recommend_keyword` xếp hạng bằng từ khoá trùng (SQLite thuần, không
+  cần OpenAI/Qdrant); (3) không có bio → keyword degenerate về hot ranking
+  (tương tác + độ mới).
+
+### Guardrails (an toàn đầu vào)
+`guardrails.py` (thuần, `tests/test_guardrails.py`) chặn 2 lớp TRƯỚC khi nội dung
+người dùng tới model/retrieval, áp cho cả `PUT /bio` (→ HTTP 422) và `POST /api/ask`
+(→ `action="blocked"`, bọc quanh RAG của Nghĩa, không sửa logic bên trong):
+- **Tục tĩu / xúc phạm / slur** (VI+EN, khớp theo ranh giới từ).
+- **Prompt injection** ("bỏ qua hướng dẫn", "đóng vai...", "reveal system prompt"...).
+- Chuẩn hoá: bỏ ký tự ẩn zero-width + ký tự điều khiển, gộp khoảng trắng, giới hạn
+  độ dài. Defense-in-depth: prompt suy hồ sơ cũng coi bio là DỮ LIỆU, phớt lờ mọi
+  câu lệnh nhúng trong đó.
 
 Công thức điểm: `score = 0.5*sim(cosine user↔news) + 0.25*eng(log1p(hearts+comments),
 chuẩn hoá theo max) + 0.25*rec(exp(-tuổi_bài/72h))`, sau đó chọn top-k bằng MMR
