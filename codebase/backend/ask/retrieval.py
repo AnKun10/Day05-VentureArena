@@ -96,15 +96,27 @@ def _retrieve(query: str, cands: list[dict], embed, k: int) -> list[dict]:
 
 
 def search_qa(store, query: str, embed=None, k: int = 5) -> list[dict]:
-    """Hybrid (lexical + semantic RRF) trên hỏi-đáp + bản tin."""
+    """Hybrid (lexical + semantic RRF) trên tri thức khoá + bản tin.
+    Nguồn tri thức: KB chunks (gói discord_kb đã ingest) — nếu chưa ingest thì
+    hạ cấp về qa_threads cũ (không vỡ). Bản tin (news) luôn tham gia."""
     emb_map = store.get_ask_embeddings() if embed is not None else {}
     cands = []
-    for t in store.list_qa_threads():
-        key = "qa:" + t["thread_id"]
-        cands.append({"_id": key, "_emb": emb_map.get(key),
-                      "_text": f"{t.get('title','')} {t.get('body','')}",
-                      "source": "hỏi-đáp", "title": t.get("title") or "(thảo luận)",
-                      "body": t.get("body", ""), "url": t.get("jump_url") or ""})
+    kb = store.list_kb_chunks()
+    if kb:
+        for c in kb:
+            key = "kb:" + c["chunk_id"]
+            cands.append({"_id": key, "_emb": emb_map.get(key),
+                          "_text": f"{c.get('title','')} {c.get('chunk_text','')}",
+                          "source": c.get("channel_name") or "khoá",
+                          "title": c.get("title") or "(nội dung)",
+                          "body": c.get("chunk_text", ""), "url": c.get("url") or ""})
+    else:
+        for t in store.list_qa_threads():
+            key = "qa:" + t["thread_id"]
+            cands.append({"_id": key, "_emb": emb_map.get(key),
+                          "_text": f"{t.get('title','')} {t.get('body','')}",
+                          "source": "hỏi-đáp", "title": t.get("title") or "(thảo luận)",
+                          "body": t.get("body", ""), "url": t.get("jump_url") or ""})
     for n in store.list_news():
         key = "news:" + n["message_id"]
         cands.append({"_id": key, "_emb": emb_map.get(key),

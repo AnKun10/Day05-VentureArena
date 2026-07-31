@@ -134,3 +134,20 @@ TRƯỚC khi vào agent (`action="blocked"`). Agent lỗi → `no_info` (không 
 python -m ask.ingest_qa ../../data/discord_crawl_dataset_snapshot_2026-07-31/discord_crawl/questions
 python -m ask.embed_index          # embed qa + news vào ask_embeddings (cần OPENAI_API_KEY)
 ```
+
+## Nguồn tri thức /ask từ gói KB (discord_kb_v0.1-provisional)
+
+`ask/ingest_kb.py` nạp gói KB đã xử lý (cleaned/chunked, có provenance) làm nguồn
+tri thức chính cho `/ask` (thay qa_threads ad-hoc; qa_threads vẫn là fallback nếu
+KB rỗng). **Chính sách access** (gói khoá mọi chunk `review_required` vì chưa có
+chủ quyền duyệt): team — chủ dữ liệu Discord của khoá — duyệt subset AN TOÀN:
+- CHỈ nhận `sensitivity_category == 'none'`; LOẠI personal_data/internal_only/
+  restricted/suspected_secret (log rõ mỗi lần chạy, auditable).
+- Chỉ embed `chunk_text`; giữ `thread_id` + url nguồn (`source_reference`) để
+  trích dẫn Discord thật.
+
+```bash
+python -m ask.ingest_kb ../../data/discord_kb_v0.1-provisional
+# → ingest 109/132 chunk (loại 23: 17 personal_data + 6 internal_only)
+```
+`search_qa` tra KB chunks + bản tin (hybrid RRF), trả citation là link Discord gốc.

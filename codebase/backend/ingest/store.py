@@ -57,6 +57,10 @@ CREATE TABLE IF NOT EXISTS schedule_overrides(
   patch TEXT, custom TEXT, updated_at TEXT,
   PRIMARY KEY(user_id, block_key)
 );
+CREATE TABLE IF NOT EXISTS kb_chunks(
+  chunk_id TEXT PRIMARY KEY, channel_name TEXT, title TEXT, chunk_text TEXT,
+  thread_id TEXT, url TEXT
+);
 """
 
 
@@ -214,6 +218,19 @@ class Store:
     def get_ask_embeddings(self) -> dict[str, list[float]]:
         return {r["doc_key"]: json.loads(r["embedding"])
                 for r in self.conn.execute("SELECT doc_key, embedding FROM ask_embeddings")}
+
+    # ---------- KB chunks (nguồn tri thức /ask từ gói discord_kb) ----------
+
+    def upsert_kb_chunk(self, chunk_id: str, channel_name: str, title: str,
+                        chunk_text: str, thread_id: str | None, url: str | None) -> None:
+        self.conn.execute(
+            "INSERT OR REPLACE INTO kb_chunks"
+            "(chunk_id, channel_name, title, chunk_text, thread_id, url) VALUES(?,?,?,?,?,?)",
+            (chunk_id, channel_name, title, chunk_text, thread_id, url))
+        self.conn.commit()
+
+    def list_kb_chunks(self) -> list[dict]:
+        return [dict(r) for r in self.conn.execute("SELECT * FROM kb_chunks")]
 
     # ---------- Daily AI News (cache theo user + ngày) ----------
 

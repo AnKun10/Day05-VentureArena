@@ -9,6 +9,9 @@ class FakeStore:
         self._res, self._ev = list(resources), list(events)
         self._emb = dict(embeddings or {})
 
+    def list_kb_chunks(self):
+        return []                          # chưa ingest KB → search_qa hạ cấp qa_threads
+
     def list_qa_threads(self):
         return self._qa
 
