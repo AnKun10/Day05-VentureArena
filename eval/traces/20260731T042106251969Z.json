@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-07-31T04:21:06.251969+00:00",
+  "question": "Kẹt kỹ thuật trong buổi lab thì gọi ai?",
+  "action": "answer",
+  "provider": null,
+  "answer": "Giơ tay gọi Lab Coach trong phòng, hoặc post vào kênh lớp kèm ảnh chụp lỗi để TA hỗ trợ.",
+  "citations": [
+    "#thông-báo"
+  ],
+  "confidence": 0.75
+}

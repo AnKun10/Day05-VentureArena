@@ -19,6 +19,9 @@ venv/
 *.sqlite3
 *.log
 
+# Cache verdict của LLM — dữ liệu chạy, mỗi máy tự sinh
+.ai_cache.json
+
 # Crawler / tooling artifacts
 playwright-report/
 config.yaml

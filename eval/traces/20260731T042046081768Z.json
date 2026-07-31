@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-07-31T04:20:46.081768+00:00",
+  "question": "Kẹt kỹ thuật trong buổi lab thì gọi ai?",
+  "action": "answer",
+  "provider": "gemini",
+  "answer": "Giơ tay gọi Lab Coach trong phòng, hoặc post vào kênh lớp kèm ảnh chụp lỗi để TA hỗ trợ.",
+  "citations": [
+    "#thông-báo"
+  ],
+  "confidence": 0.8
+}

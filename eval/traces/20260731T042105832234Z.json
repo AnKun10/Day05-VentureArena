@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-07-31T04:21:05.832234+00:00",
+  "question": "Không có thẻ vào phòng lab thì làm sao?",
+  "action": "answer",
+  "provider": null,
+  "answer": "Điền form báo lỗi thẻ được pin trong kênh #hỏi-đáp (bài 'QR báo lỗi/thiếu thẻ'). Lab Coach sẽ xử lý trước buổi học.",
+  "citations": [
+    "#thông-báo"
+  ],
+  "confidence": 0.75
+}

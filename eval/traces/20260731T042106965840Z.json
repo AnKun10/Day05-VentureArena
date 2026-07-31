@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-07-31T04:21:06.965840+00:00",
+  "question": "Mentor duty là gì?",
+  "action": "answer",
+  "provider": null,
+  "answer": "Buổi làm việc định kỳ giữa team và mentor: review tiến độ, gỡ vướng, định hướng tuần kế tiếp.",
+  "citations": [
+    "#thông-báo"
+  ],
+  "confidence": 0.75
+}

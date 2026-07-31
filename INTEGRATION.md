@@ -112,9 +112,32 @@ AI_PROVIDER_ORDER=gemini,openai,openrouter,cerebras
 
 Xác nhận đã bật: `curl http://127.0.0.1:8000/api/health` → `"ai_enabled": true`.
 
-> ⚠️ **Tính đến lần chạy này, chưa có API key nào được cấu hình** — mọi số đo ở trên là của đường lui
-> thuần luật, và trace đều ghi `"provider": null`. Cần một key thật rồi **đo lại** trước khi khai với
-> giám khảo là sản phẩm có lời gọi AI thật.
+### Trạng thái AI (cập nhật sau khi cắm key Gemini thật)
+
+✅ **Đã có lời gọi AI thật, ở đúng chỗ quyết định.** Trace ghi `"provider": "gemini"`.
+
+Ba thứ phải sửa mới gọi được, đều phát hiện bằng cách gọi thật chứ không đoán:
+
+| Vấn đề | Xử lý |
+|---|---|
+| SDK `genai.Client().interactions.create()` ném "Connection error" (API còn experimental) | Chuyển sang REST `v1beta/models/{model}:generateContent` |
+| Model mặc định `gemini-3.5-flash` → 404 (không tồn tại); `gemini-2.0-flash*` → 429 `limit: 0` | Dò 42 model của key, chỉ **`gemini-2.5-flash-lite`** còn hạn mức |
+| Lượt đo đầu: `"Lab-10 deadline khi nào?"` bị model phán `ambiguous` dù đã nêu rõ mã buổi | Sửa prompt: nêu rõ có mã buổi khớp SOURCE thì KHÔNG phải mơ hồ, thêm ví dụ cho từng verdict → 5/5 đúng |
+
+### ⚠️ Hạn mức rất gắt — ảnh hưởng trực tiếp tới demo
+
+Key hackathon đo được: **`GenerateRequestsPerDayPerProjectPerModel-FreeTier` = 20 request/NGÀY**,
+và ~29 giây giữa hai lần gọi. Gọi 5 lần liên tiếp thì lần thứ 2 đã 429.
+
+Hệ quả thật: chạy trọn golden set 21 case thì **chỉ 1 case dùng được AI**, 20 case còn lại lặng lẽ rơi
+về rule-based (nên điểm đo ra là 18/21 — của đường lui, không phải của AI).
+
+Đã thêm **cache verdict** (`codebase/backend/.ai_cache.json`) để tập demo không đốt quota: câu đã hỏi
+lấy lại kết quả AI thật cũ, quota để dành cho **câu lạ giám khảo hỏi tại chỗ** — đúng lúc bắt buộc phải
+gọi thật. Tắt cache: `AI_CACHE=0`.
+
+**Trước buổi demo nên làm:** xin thêm 1-2 key Gemini từ tài khoản Google khác (mỗi project 20 req/ngày),
+hoặc thêm `OPENROUTER_API_KEY` — chuỗi fallback tự chuyển provider khi provider đầu hết hạn mức.
 
 ## Việc còn lại
 
