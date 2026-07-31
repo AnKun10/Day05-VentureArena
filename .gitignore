@@ -5,10 +5,20 @@ node_modules/
 dist/
 .playwright-mcp/
 
-# Python (codebase/bot)
+# Python
 __pycache__/
 *.pyc
 .venv/
 venv/
+.pytest_cache/
+*.egg-info/
 *.sqlite3
 *.log
+
+# Crawler / tooling artifacts
+playwright-report/
+config.yaml
+output/
+data/discord_crawl/
+edge-profile*/
+*.cookie

@@ -1,3 +1,25 @@
+## Discord Developer Portal legal pages
+
+This repository includes static Terms of Service and Privacy Policy pages in `docs/` for the Companion Discord Bot. To publish them with GitHub Pages:
+
+```text
+GitHub repository
+→ Settings
+→ Pages
+→ Deploy from a branch
+→ Branch: main
+→ Folder: /docs
+→ Save
+```
+
+After GitHub Pages finishes deploying, paste these URLs into the Discord Developer Portal:
+
+```text
+General Information
+→ Terms of Service URL: https://AnKun10.github.io/Day05-VentureArena/terms.html
+→ Privacy Policy URL: https://AnKun10.github.io/Day05-VentureArena/privacy.html
+```
+
 # Mini Hackathon AI — Batch 03
 
 **SPEC → Prototype → Demo.** Đây không phải cuộc thi code — đây là cuộc thi **tư duy sản phẩm AI**.
