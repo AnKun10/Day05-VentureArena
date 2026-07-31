@@ -14,8 +14,8 @@ _STOPWORDS = {
     "quan", "tam", "den", "ve", "hoc", "bai", "nao", "gi", "co", "duoc",
 }
 # Mức ép đa dạng của MMR (biến thể nhân): 0 = tắt, 1 = tối đa.
-# 0.15 = thấp — gợi ý bám sát relevance, chỉ nén nhẹ bài gần trùng hẳn.
-MMR_LAMBDA = 0.15
+# 0.1 = rất thấp — gợi ý gần như bám hoàn toàn relevance, chỉ nén cực nhẹ bài gần trùng hẳn.
+MMR_LAMBDA = 0.1
 
 
 def cosine(a, b) -> float:
