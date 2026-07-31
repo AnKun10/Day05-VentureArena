@@ -16,6 +16,7 @@ export const SESSION_TYPES = {
   WS: { label: "Workshop", color: "#9333ea" },
   OH: { label: "Office hour", color: "#d97706" },
   MD: { label: "Mentor duty", color: "#db2777" },
+  OTHER: { label: "Deadline/Khác", color: "#64748b" },
 };
 
 // ---------- Màu role giống Discord ----------

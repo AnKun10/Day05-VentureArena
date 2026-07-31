@@ -36,8 +36,7 @@ XÁC ĐỊNH type:
 - "buổi lý thuyết" / "lecture" → LT
 - Có mốc thời gian nhưng KHÔNG phải một buổi học/sự kiện có mặt tham dự
   (checkpoint, hạn chót nộp bài/đăng ký, deadline...) → OTHER.
-  OTHER sẽ KHÔNG hiển thị thành buổi trên lịch — tuyệt đối không gán các
-  deadline/checkpoint này vào WS/OH/MD/LAB/LT.
+  Tuyệt đối không gán các deadline/checkpoint này vào WS/OH/MD/LAB/LT.
 
 XÁC ĐỊNH format:
 - Mặc định "Zoom" trừ khi bài nêu rõ học/họp trực tiếp tại phòng/địa điểm cụ

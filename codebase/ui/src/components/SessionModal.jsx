@@ -31,8 +31,7 @@ const LINK_DEFS = [
 ];
 
 export default function SessionModal({ session: s, onClose }) {
-  // SESSION_TYPES không có "OTHER" (buổi từ API) — dùng lại palette OH.
-  const t = SESSION_TYPES[s.type] ?? SESSION_TYPES.OH;
+  const t = SESSION_TYPES[s.type] ?? SESSION_TYPES.OTHER;
   const available = LINK_DEFS.filter((l) => s.links?.[l.key]);
   const missing = LINK_DEFS.filter((l) => !s.links?.[l.key] && l.key !== "zoom");
   const hasSummary = Boolean(s.desc) || Boolean(s.summary?.length);

@@ -1,10 +1,16 @@
 """Weekly schedule builder (pure — no I/O besides receiving already-loaded data)."""
 
+import re
 from datetime import date, timedelta
 
-RECURRING_DAYS = range(0, 6)          # T2..T7 (Mon-Sat); weekday() Sunday == 6
-LAB_SLOT = ("09:00", "13:00")
-LT_SLOT = ("14:00", "18:00")
+RECURRING_DAYS = range(0, 5)          # T2..T6 (Mon-Fri); T7/CN nghỉ
+MORNING_SLOT = ("09:00", "13:00")
+AFTERNOON_SLOT = ("14:00", "18:00")
+# Khoá 4: sáng Lý thuyết, chiều Lab. Khoá 3: ngược lại (sáng Lab, chiều LT).
+COHORT_SLOTS = {
+    "4": {"LT": MORNING_SLOT, "LAB": AFTERNOON_SLOT},
+    "3": {"LAB": MORNING_SLOT, "LT": AFTERNOON_SLOT},
+}
 STATIC_MATERIALS = {
     "LAB": [{"label": "Tài liệu hướng dẫn", "url": "https://codelabs.vlearn.dev/codelab", "kind": "doc"}],
     "LT": [{"label": "Slide trên VLearn", "url": "https://vlearn.dev", "kind": "slide"}],
@@ -16,27 +22,24 @@ _OVERRIDE_FIELDS = ("host", "zoom_url", "location")
 def recurring_sessions(settings: dict, date_from: str, date_to: str) -> list[dict]:
     d0 = date.fromisoformat(date_from)
     d1 = date.fromisoformat(date_to)
+    slots = COHORT_SLOTS.get(settings["cohort"], COHORT_SLOTS["4"])
+    titles = {"LAB": "Buổi Lab", "LT": "Buổi Lý thuyết"}
+    rooms = {"LAB": settings["lab_room"], "LT": settings["lt_room"]}
     items: list[dict] = []
     d = d0
     while d <= d1:
         if d.weekday() in RECURRING_DAYS:
             date_str = d.isoformat()
-            items.append({
-                "type": "LAB", "title": "Buổi Lab", "date": date_str,
-                "start": LAB_SLOT[0], "end": LAB_SLOT[1],
-                "location": settings["lab_room"], "host": "Giảng viên khoá",
-                "format": "Offline", "cohort": settings["cohort"], "zoom_url": None,
-                "session_code": None, "jump_url": None,
-                "materials": [dict(m) for m in STATIC_MATERIALS["LAB"]],
-            })
-            items.append({
-                "type": "LT", "title": "Buổi Lý thuyết", "date": date_str,
-                "start": LT_SLOT[0], "end": LT_SLOT[1],
-                "location": settings["lt_room"], "host": "Giảng viên khoá",
-                "format": "Offline", "cohort": settings["cohort"], "zoom_url": None,
-                "session_code": None, "jump_url": None,
-                "materials": [dict(m) for m in STATIC_MATERIALS["LT"]],
-            })
+            for stype in sorted(slots, key=lambda t: slots[t][0]):   # sáng trước chiều
+                slot = slots[stype]
+                items.append({
+                    "type": stype, "title": titles[stype], "date": date_str,
+                    "start": slot[0], "end": slot[1],
+                    "location": rooms[stype], "host": "Giảng viên khoá",
+                    "format": "Offline", "cohort": settings["cohort"], "zoom_url": None,
+                    "session_code": None, "jump_url": None,
+                    "materials": [dict(m) for m in STATIC_MATERIALS[stype]],
+                })
         d += timedelta(days=1)
     return items
 
@@ -68,20 +71,39 @@ def _dedup_events(events: list[dict]) -> list[dict]:
     return list(best.values())
 
 
+def _ws_code_from_title(title: str | None) -> str | None:
+    """'Workshop 1: Kick-off' / 'Workshop 02' / 'WS3' -> 'WS-1'/'WS-2'/'WS-3'."""
+    m = re.search(r"(?:ws|workshop)\s*-?\s*0*(\d+)", title or "", re.IGNORECASE)
+    return f"WS-{m.group(1)}" if m else None
+
+
+def _norm(text: str | None) -> str:
+    return re.sub(r"[^0-9a-zà-ỹ]+", " ", (text or "").lower()).strip()
+
+
 def _materials_for_event(event: dict, resources: list[dict]) -> list[dict]:
     session_code = event.get("session_code")
-    if not session_code:
-        return []
+    if not session_code and event.get("type") == "WS":
+        # event trích từ thông báo không có session_code -> suy từ số trong title
+        session_code = _ws_code_from_title(event.get("title"))
+    matched = []
+    if session_code:
+        matched = [r for r in resources if r.get("session_code") == session_code]
+    # Fallback cho resource chưa được gán session_code (vd "Tài liệu Workshop
+    # Kick-off" không có số): khớp khi phần tên riêng của buổi (sau dấu ':')
+    # xuất hiện trong title resource.
+    subtitle = _norm((event.get("title") or "").split(":", 1)[-1])
+    if len(subtitle) >= 4:
+        for r in resources:
+            if r.get("session_code") is None and r not in matched \
+                    and subtitle in _norm(r.get("title")):
+                matched.append(r)
     return [{"label": r.get("title"), "url": r.get("url"), "kind": r.get("kind")}
-            for r in resources if r.get("session_code") == session_code]
+            for r in matched]
 
 
 def build_schedule(settings: dict, events: list[dict], resources: list[dict],
                    date_from: str, date_to: str) -> list[dict]:
-    # OTHER là ngăn chứa các thông báo có mốc thời gian nhưng KHÔNG phải buổi
-    # học (checkpoint, hạn chót nộp bài...) — lưu trong DB để tra cứu nhưng
-    # không bao giờ hiển thị thành buổi trên lịch/bot.
-    events = [e for e in events if e.get("type") != "OTHER"]
     lab_lt_events = [e for e in events if e.get("type") in ("LAB", "LT")]
     evening_events = _dedup_events([e for e in events if e.get("type") not in ("LAB", "LT")])
     events = lab_lt_events + evening_events

@@ -8,18 +8,26 @@ from ingest.store import Store
 SET4 = {"cohort": "4", "lt_room": "D302", "lab_room": "D305"}
 
 
-def test_recurring_skips_sunday_and_slots():
+def test_recurring_skips_weekend_and_cohort_slots():
     # 2026-07-27 (T2) .. 2026-08-02 (CN)
     items = recurring_sessions(SET4, "2026-07-27", "2026-08-02")
-    assert len(items) == 12                                     # 6 ngày × 2 buổi
+    assert len(items) == 10                                     # 5 ngày (T2-T6) × 2 buổi
     dates = {i["date"] for i in items}
-    assert "2026-08-02" not in dates                            # CN nghỉ
-    lab = next(i for i in items if i["date"] == "2026-07-27" and i["type"] == "LAB")
-    assert (lab["start"], lab["end"], lab["location"]) == ("09:00", "13:00", "D305")
+    assert "2026-08-01" not in dates and "2026-08-02" not in dates  # T7 + CN nghỉ
+    # Khoá 4: sáng Lý thuyết, chiều Lab
     lt = next(i for i in items if i["date"] == "2026-07-27" and i["type"] == "LT")
-    assert (lt["start"], lt["end"], lt["location"]) == ("14:00", "18:00", "D302")
+    assert (lt["start"], lt["end"], lt["location"]) == ("09:00", "13:00", "D302")
+    lab = next(i for i in items if i["date"] == "2026-07-27" and i["type"] == "LAB")
+    assert (lab["start"], lab["end"], lab["location"]) == ("14:00", "18:00", "D305")
     assert lab["materials"][0]["url"].startswith("https://codelabs.vlearn.dev")
     assert lt["materials"][0]["url"] == "https://vlearn.dev"
+    # Khoá 3: ngược lại — sáng Lab, chiều Lý thuyết
+    set3 = {"cohort": "3", "lt_room": "D302", "lab_room": "D305"}
+    items3 = recurring_sessions(set3, "2026-07-27", "2026-07-27")
+    lab3 = next(i for i in items3 if i["type"] == "LAB")
+    lt3 = next(i for i in items3 if i["type"] == "LT")
+    assert (lab3["start"], lab3["end"]) == ("09:00", "13:00")
+    assert (lt3["start"], lt3["end"]) == ("14:00", "18:00")
 
 
 def test_build_schedule_merges_evening_and_overrides_host():
@@ -75,8 +83,8 @@ def test_lab_lt_partial_updates_both_apply():
     assert len(items) == 2                                  # không sinh block LT thừa
 
 
-def test_build_schedule_drops_other_events():
-    # OTHER (checkpoint/deadline) lưu DB nhưng không phải buổi học → không hiển thị
+def test_build_schedule_keeps_other_events():
+    # OTHER (checkpoint/deadline) hiển thị như sự kiện riêng trên lịch
     events = [
         {"type": "OTHER", "title": "CP3: Đánh giá sản phẩm", "date": "2026-07-27",
          "start": "10:30", "end": None, "cohort": "all", "format": "Zoom",
@@ -84,7 +92,34 @@ def test_build_schedule_drops_other_events():
          "location": None},
     ]
     items = build_schedule(SET4, events, [], "2026-07-27", "2026-07-27")
-    assert [i["type"] for i in items] == ["LAB", "LT"]      # chỉ còn lịch cố định
+    assert sorted(i["type"] for i in items) == ["LAB", "LT", "OTHER"]
+
+
+def test_ws_materials_match_by_title_number_and_subtitle():
+    events = [
+        {"type": "WS", "title": "Workshop 1: Kick-off", "date": "2026-07-24",
+         "start": "20:00", "end": None, "cohort": "all", "format": "Zoom",
+         "zoom_url": None, "host": None, "session_code": None, "jump_url": None,
+         "location": None},
+    ]
+    resources = [
+        # record đã được gán code WS-1 → match theo số suy từ title event
+        {"message_id": "1", "kind": "record", "title": "Video Recording WS1: Kick off",
+         "session_code": "WS-1", "author": "BTC", "url": "https://r/ws1",
+         "created_at": "2026-07-26T00:00:00"},
+        # slide KHÔNG có số/code → fallback khớp phần tên riêng "Kick-off"
+        {"message_id": "2", "kind": "slide", "title": "Tài liệu Workshop Kick-off",
+         "session_code": None, "author": "BTC", "url": "https://s/ws1",
+         "created_at": "2026-07-24T00:00:00"},
+        # resource khác không liên quan → không match
+        {"message_id": "3", "kind": "doc", "title": "Ngân hàng đề tài",
+         "session_code": None, "author": "BTC", "url": "https://d/x",
+         "created_at": "2026-07-26T00:00:00"},
+    ]
+    items = build_schedule(SET4, events, resources, "2026-07-24", "2026-07-24")
+    ws = next(i for i in items if i["type"] == "WS")
+    urls = {m["url"] for m in ws["materials"]}
+    assert urls == {"https://r/ws1", "https://s/ws1"}
 
 
 def _client(tmp_path, monkeypatch):

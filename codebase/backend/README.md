@@ -69,17 +69,19 @@ giữa chừng, xoá thủ công `smoke-rec.db` và `smoke_qdrant/` trước khi
   tuần hiện tại (thứ 2 → thứ 7).
 
 Lịch gồm 2 phần ghép lại theo `date`:
-- **Recurring** (`RECURRING_DAYS = range(0, 6)`, tức thứ 2 → thứ 7): mỗi ngày 1
-  buổi LAB (09:00–13:00, phòng `lab_room`) + 1 buổi LT (14:00–18:00, phòng
-  `lt_room`), hình thức Offline, tài liệu tĩnh đính kèm sẵn (LT →
+- **Recurring** (`RECURRING_DAYS = range(0, 5)`, tức thứ 2 → thứ 6; T7/CN nghỉ):
+  mỗi ngày 1 buổi sáng (09:00–13:00) + 1 buổi chiều (14:00–18:00), hình thức
+  Offline. Slot theo khoá (`COHORT_SLOTS`): **Khoá 4 sáng Lý thuyết, chiều
+  Lab**; **Khoá 3 ngược lại** (sáng Lab, chiều Lý thuyết). Phòng lấy từ
+  settings (`lt_room`/`lab_room`), tài liệu tĩnh đính kèm sẵn (LT →
   `https://vlearn.dev`, LAB → `https://codelabs.vlearn.dev/codelab`).
 - **Buổi tối trích từ thông báo** (WS/OH/MD): agent
   `ingest.agents.schedule_extractor` đọc bài đăng ở các channel `thong-bao`,
   extract-once — bài đã trích lưu trong bảng đánh dấu riêng
   (`schedule_extracted`) nên không gọi AI lại cho bài cũ, giống cơ chế
-  enrich-once ở trên. Type `OTHER` là ngăn chứa deadline/checkpoint (có mốc
-  thời gian nhưng không phải buổi học) — lưu trong DB nhưng `build_schedule`
-  lọc bỏ, không bao giờ hiển thị thành buổi. Nếu 1 buổi LAB/LT trong tuần có
+  enrich-once ở trên. Type `OTHER` chứa deadline/checkpoint (có mốc thời gian
+  nhưng không phải buổi học có mặt tham dự) — vẫn hiển thị trên lịch nhưng với
+  màu riêng (xám, nhãn Deadline/Khác). Nếu 1 buổi LAB/LT trong tuần có
   announcement đổi phòng/host riêng (override phòng/host/zoom_url), event
   trích được sẽ ghi đè field tương ứng lên block recurring cùng ngày thay vì
   tạo dòng riêng; WS/OH/MD được dedup theo `(type, date, start)` trước khi

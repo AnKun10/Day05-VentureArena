@@ -18,8 +18,8 @@ const END_H = 23;
 const HPX = 52; // px mỗi giờ
 const DAY_LABELS = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
 
-// SESSION_TYPES không có "OTHER" — dùng lại palette OH (theo brief) khi type lạ.
-const typeStyle = (type) => SESSION_TYPES[type] ?? SESSION_TYPES.OH;
+// type lạ ngoài palette → dùng màu OTHER (xám) làm fallback an toàn.
+const typeStyle = (type) => SESSION_TYPES[type] ?? SESSION_TYPES.OTHER;
 
 const toISODate = (d) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
