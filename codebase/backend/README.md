@@ -109,3 +109,28 @@ Lịch gồm 2 phần ghép lại theo `date`:
 
 `GET /api/schedule` không cần `OPENAI_API_KEY` (build từ dữ liệu đã trích sẵn
 trong `companion.db`); chỉ `python -m ingest` (bước extract) mới gọi AI.
+
+## Hỏi-đáp có Agent (/ask)
+
+`POST /api/ask {question}` → agent (OpenAI Agents SDK) có **2 function tool**,
+chỉ trả lời dựa trên kết quả tool (chống bịa). Trả về `{action, answer,
+citations, confidence}` với `action ∈ {answer, no_info, blocked}`.
+
+- `search_qa(query)` — **hybrid retrieval** trên kênh **hỏi-đáp** + **bản tin**:
+  trộn 2 tín hiệu bằng **RRF** (Reciprocal Rank Fusion, `RRF_K=60`): (1) lexical
+  token-overlap, (2) semantic cosine giữa embedding câu hỏi và embedding tài
+  liệu (`text-embedding-3-small`, lưu trong bảng `ask_embeddings`, ngưỡng
+  `SEM_FLOOR=0.30`). Không có embedder/chưa build index → tự hạ cấp lexical.
+- `search_resources(query)` — keyword trên tài nguyên (record/slide/doc) + sự
+  kiện lịch có link Zoom.
+
+**Chống bịa + an toàn**: prompt cấm suy diễn ngoài kết quả tool; không tìm thấy
+→ `found=false` → "Mình chưa có thông tin về việc này...". Guardrail
+(`guardrails.check_question`) chặn nội dung không phù hợp / prompt injection
+TRƯỚC khi vào agent (`action="blocked"`). Agent lỗi → `no_info` (không vỡ).
+
+**Chuẩn bị dữ liệu /ask (một lần):**
+```bash
+python -m ask.ingest_qa ../../data/discord_crawl_dataset_snapshot_2026-07-31/discord_crawl/questions
+python -m ask.embed_index          # embed qa + news vào ask_embeddings (cần OPENAI_API_KEY)
+```

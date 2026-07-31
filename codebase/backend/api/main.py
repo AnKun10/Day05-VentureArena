@@ -3,35 +3,53 @@ from typing import Literal
 
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from ingest.config import Config
 from ingest.schedule import build_schedule
 from ingest.store import Store
 from guardrails import check_bio, check_question
 
-import app as qa  # Q&A core POST /api/ask (Nghĩa) — mount vào cùng một server
-
 app = FastAPI(title="Companion API")
 app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173"],
                    allow_methods=["*"], allow_headers=["*"])
 
 
-def guarded_ask(request: qa.AskRequest) -> qa.AskResponse:
-    """Bọc guardrail quanh /api/ask của Nghĩa: chặn nội dung không phù hợp /
-    prompt injection TRƯỚC khi vào RAG, không sửa logic bên trong."""
-    verdict = check_question(request.question)
-    if not verdict.ok:
-        return qa.AskResponse(action="blocked", answer=verdict.reason,
-                              citations=[], confidence=0.0)
-    return qa.ask(qa.AskRequest(question=verdict.text))
-
-
-app.add_api_route("/api/ask", guarded_ask, methods=["POST"], response_model=qa.AskResponse)
-
-
 def get_store() -> Store:
     return Store(Config.from_env().db_path)
+
+
+class AskRequest(BaseModel):
+    question: str = Field(min_length=2, max_length=2_000)
+
+
+class AskResponse(BaseModel):
+    action: str                       # "answer" | "no_info" | "blocked"
+    answer: str
+    citations: list[str] = []
+    confidence: float = 0.0
+
+
+@app.post("/api/ask", response_model=AskResponse)
+def ask(request: AskRequest, store: Store = Depends(get_store)) -> AskResponse:
+    """Agent hỏi-đáp có 2 tool (hỏi-đáp/bản tin + tài nguyên/lịch). Guardrail
+    chặn nội dung không phù hợp / injection TRƯỚC khi vào agent (chống bịa +
+    chống thao túng)."""
+    verdict = check_question(request.question)
+    if not verdict.ok:
+        return AskResponse(action="blocked", answer=verdict.reason)
+    from ask import answer_question
+    try:
+        result = answer_question(store, verdict.text, Config.from_env())
+    except Exception as exc:
+        print(f"[ask] agent failed: {exc}")
+        return AskResponse(action="no_info",
+                           answer="Companion tạm thời chưa trả lời được. Bạn thử lại sau nhé.")
+    return AskResponse(
+        action="answer" if result.found else "no_info",
+        answer=result.answer_vi,
+        citations=list(dict.fromkeys(result.citations)),   # bỏ trùng, giữ thứ tự
+        confidence=1.0 if result.found else 0.0)
 
 
 _VS = None

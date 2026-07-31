@@ -40,6 +40,13 @@ CREATE TABLE IF NOT EXISTS schedule_extracted(
   message_id TEXT PRIMARY KEY, extracted_at TEXT, trace_id TEXT,
   event_count INTEGER DEFAULT 0
 );
+CREATE TABLE IF NOT EXISTS qa_threads(
+  thread_id TEXT PRIMARY KEY, title TEXT, body TEXT,
+  reply_count INTEGER DEFAULT 0, jump_url TEXT, created_at TEXT
+);
+CREATE TABLE IF NOT EXISTS ask_embeddings(
+  doc_key TEXT PRIMARY KEY, embedding TEXT
+);
 """
 
 
@@ -166,6 +173,35 @@ class Store:
     def list_resources(self) -> list[dict]:
         return [dict(r) for r in self.conn.execute(
             "SELECT * FROM resources ORDER BY created_at DESC").fetchall()]
+
+    # ---------- Q&A (kênh hỏi-đáp) — nguồn cho /ask ----------
+
+    def upsert_qa_thread(self, thread_id: str, title: str, body: str,
+                         reply_count: int, jump_url: str, created_at: str) -> None:
+        self.conn.execute(
+            "INSERT OR REPLACE INTO qa_threads"
+            "(thread_id, title, body, reply_count, jump_url, created_at) VALUES(?,?,?,?,?,?)",
+            (thread_id, title, body, reply_count, jump_url, created_at))
+        self.conn.commit()
+
+    def list_qa_threads(self) -> list[dict]:
+        return [dict(r) for r in self.conn.execute(
+            "SELECT * FROM qa_threads ORDER BY created_at DESC").fetchall()]
+
+    def all_schedule_events(self) -> list[dict]:
+        """Mọi sự kiện lịch (không lọc cohort) — cho tool tra cứu link zoom /ask."""
+        return [dict(r) for r in self.conn.execute(
+            "SELECT * FROM schedule_events ORDER BY date, COALESCE(start,'99:99')").fetchall()]
+
+    def save_ask_embedding(self, doc_key: str, embedding: list[float]) -> None:
+        self.conn.execute(
+            "INSERT OR REPLACE INTO ask_embeddings(doc_key, embedding) VALUES(?,?)",
+            (doc_key, json.dumps(embedding)))
+        self.conn.commit()
+
+    def get_ask_embeddings(self) -> dict[str, list[float]]:
+        return {r["doc_key"]: json.loads(r["embedding"])
+                for r in self.conn.execute("SELECT doc_key, embedding FROM ask_embeddings")}
 
     # ---------- recsys: users / bookmarks / embedding flags ----------
 

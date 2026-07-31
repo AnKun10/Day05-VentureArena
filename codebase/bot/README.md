@@ -27,7 +27,10 @@ hiển thị lý do từ server. `/digest personalize` nếu hỏng → tự h�
 nhất kèm ghi chú. Nội dung bio/câu hỏi bị chặn (tục tĩu / prompt injection) được
 server guardrail xử lý; bot chỉ hiển thị lý do.
 
-- `/ask <question>` — hỏi Companion (RAG), trả lời kèm nguồn trích dẫn.
+- `/ask <question>` — hỏi Companion. Backend là **agent có 2 tool**: `search_qa`
+  (hybrid lexical+semantic RRF trên hỏi-đáp + bản tin) và `search_resources`
+  (record/slide/link Zoom). Agent chỉ trả lời dựa trên kết quả tool, không biết
+  thì nói "chưa có thông tin". Bot cho `/ask` timeout 45s (agent nhiều bước).
 - `/schedule [date]` — lịch học của người dùng theo ngày (`date` dạng `YYYY-MM-DD`,
   tuỳ chọn, mặc định là hôm nay theo giờ máy chạy bot). Gọi
   `GET /api/schedule?user_id=<username>&from=<date>&to=<date>` và

@@ -115,7 +115,8 @@ def create_bot() -> commands.Bot:
     async def ask(interaction: discord.Interaction, question: str):
         await interaction.response.defer(thinking=True, ephemeral=True)
         try:
-            result = await asyncio.to_thread(_request_json, f"{api_url}/api/ask", {"question": question})
+            # /ask là agent nhiều bước (embed + tool + sinh câu trả lời) → cho 45s
+            result = await asyncio.to_thread(_request_json, f"{api_url}/api/ask", {"question": question}, None, 45)
             if result.get("action") == "blocked":     # guardrail chặn nội dung
                 await interaction.followup.send(f"⚠️ {result.get('answer')}", ephemeral=True)
                 return
