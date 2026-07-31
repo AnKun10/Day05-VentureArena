@@ -1,6 +1,6 @@
 # Companion Discord Bot
 
-Bot điều khiển của Companion: 4 slash commands (`/ask` `/digest` `/schedule` `/hub` — xem `companion_discord/bot.py`; luồng TA/ta-digest đã bỏ theo MASTERPLAN) và bộ công cụ rebuild/replication dựng lại kênh trên server đích qua Discord Bot API (destination-only: chỉ tạo/xoá/replay tài nguyên managed trong `DESTINATION_GUILD_ID` sau khi duyệt dry-run).
+Bot điều khiển của Companion: 5 slash commands (`/ask` `/digest` `/schedule` `/bio` `/hub` — xem `companion_discord/bot.py`; luồng TA/ta-digest đã bỏ theo MASTERPLAN) và bộ công cụ rebuild/replication dựng lại kênh trên server đích qua Discord Bot API (destination-only: chỉ tạo/xoá/replay tài nguyên managed trong `DESTINATION_GUILD_ID` sau khi duyệt dry-run).
 
 > Phần thu thập dữ liệu bằng web-collector đã được gỡ khỏi repo. Rebuild/replication
 > đọc manifest có sẵn tại `data/discord_crawl/manifest.json` (artifact đầu vào).
@@ -14,19 +14,27 @@ uv run --no-project --with-requirements codebase/bot/requirements.txt python cod
 
 `/ask` gọi `COMPANION_API_URL/api/ask` (backend `codebase/backend` — chạy `uvicorn api.main:app --port 8000`).
 
-### 4 slash commands
+### 5 slash commands
+
+Reply của `/schedule` và `/digest` là Discord **embed** (icon theo loại buổi/tag,
+masked link nên không sinh link preview) — build bởi
+`companion_discord.formatting.schedule_embed` / `digest_embed` (module thuần,
+test tại `tests/test_bot_formatting.py`).
 
 - `/ask <question>` — hỏi Companion (RAG), trả lời kèm nguồn trích dẫn.
 - `/schedule [date]` — lịch học của người dùng theo ngày (`date` dạng `YYYY-MM-DD`,
   tuỳ chọn, mặc định là hôm nay theo giờ máy chạy bot). Gọi
   `GET /api/schedule?user_id=<username>&from=<date>&to=<date>` và
-  `GET /api/users/<username>/settings` để lấy khoá (cohort), rồi định dạng bằng
-  `companion_discord.formatting.format_schedule` — nhóm buổi học theo Sáng/Chiều/Tối.
+  `GET /api/users/<username>/settings` để lấy khoá (cohort) — nhóm buổi học theo
+  Sáng/Chiều/Tối kèm tài liệu, phòng/Zoom.
 - `/digest [option]` — bản tin mới nhất (`option=latest`, mặc định) từ
   `GET /api/news` (10 bài đầu, nhóm theo tag) hoặc gợi ý cá nhân hoá
   (`option=personalize`) từ `GET /api/recommendations?user_id=<username>&k=10`
-  (không nhóm, mỗi bài có tiền tố `✨<%>` theo độ tương đồng), định dạng bằng
-  `companion_discord.formatting.format_digest`.
+  (mỗi bài có `✨<%>` theo độ tương đồng; user chưa có bio/bookmark thì ẩn % và
+  footer hướng dẫn dùng `/bio`).
+- `/bio [text]` — xem/cập nhật bio của user (lưu server-side, dùng cho gợi ý).
+  Discord API không cho bot đọc About Me của người dùng (privacy), nên cách
+  nhanh nhất là copy About Me và dán vào `/bio text:...`.
 - `/hub` — trả về link Companion Web UI kèm `?user=<username>`, đọc từ biến môi
   trường `COMPANION_UI_URL` (mặc định `http://localhost:5173` nếu chưa cấu hình
   trong `.env`).

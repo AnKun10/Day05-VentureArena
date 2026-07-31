@@ -149,7 +149,7 @@ def test_digest_embed_personalized_no_profile_footer():
     items = [_news(title="Bài A", parts={}), _news(title="Bài B", parts={"sim": 0})]
     embed = digest_embed(items, personalized=True)
     assert "%" not in embed["description"]
-    assert "/hub" in embed["footer"] and "bio" in embed["footer"]
+    assert "/bio" in embed["footer"] and "/hub" in embed["footer"]
 
 
 def test_tag_labels_complete():

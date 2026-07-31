@@ -176,8 +176,9 @@ def digest_embed(items: list[dict], personalized: bool) -> dict:
             "fields": [],
         }
         if not any_sim:
-            embed["footer"] = ("💡 Chưa có hồ sơ sở thích — mở /hub, vào trang Bản tin "
-                               "để thêm bio hoặc bookmark bài viết, gợi ý sẽ sát bạn hơn.")
+            embed["footer"] = ("💡 Chưa có hồ sơ sở thích — dùng /bio để thêm giới thiệu "
+                               "bản thân (copy About Me của bạn là nhanh nhất), hoặc mở "
+                               "/hub bookmark vài bài viết. Gợi ý sẽ sát bạn hơn.")
         return embed
 
     groups: dict[str, list[dict]] = {}

@@ -40,9 +40,10 @@ def _embed_from(data: dict) -> discord.Embed:
     return embed
 
 
-def _request_json(url: str, payload: dict | None = None) -> dict:
+def _request_json(url: str, payload: dict | None = None, method: str | None = None) -> dict:
     data = json.dumps(payload).encode("utf-8") if payload else None
-    request = Request(url, data=data, headers={"Content-Type": "application/json"}, method="POST" if payload else "GET")
+    method = method or ("POST" if payload else "GET")
+    request = Request(url, data=data, headers={"Content-Type": "application/json"}, method=method)
     with urlopen(request, timeout=10) as response:
         return json.loads(response.read().decode("utf-8"))
 
@@ -109,6 +110,28 @@ def create_bot() -> commands.Bot:
             settings = await asyncio.to_thread(_request_json, f"{api_url}/api/users/{user}/settings")
             embed = schedule_embed(items, _date_label(d), settings["cohort"])
             await interaction.followup.send(embed=_embed_from(embed), ephemeral=True)
+        except Exception:
+            await interaction.followup.send("Chưa kết nối được Companion. Hãy thử lại sau.", ephemeral=True)
+
+    @bot.tree.command(name="bio", description="Xem hoặc cập nhật bio — Companion dùng bio để gợi ý bản tin cho bạn")
+    @app_commands.describe(text="Bio mới (bỏ trống để xem bio hiện tại). Gợi ý: copy About Me trên profile Discord của bạn")
+    async def bio(interaction: discord.Interaction, text: str | None = None):
+        await interaction.response.defer(thinking=True, ephemeral=True)
+        user = quote(interaction.user.name)
+        try:
+            # GET settings trước để đảm bảo user đã tồn tại trong DB (auto-create)
+            await asyncio.to_thread(_request_json, f"{api_url}/api/users/{user}/settings")
+            if text:
+                await asyncio.to_thread(_request_json, f"{api_url}/api/users/{user}/bio",
+                                        {"bio": text}, "PUT")
+                await interaction.followup.send(
+                    "✅ Đã lưu bio! Chạy `/digest personalize` để nhận gợi ý theo sở thích mới.",
+                    ephemeral=True)
+            else:
+                users = await asyncio.to_thread(_request_json, f"{api_url}/api/users")
+                me = next((u for u in users if u.get("user_id") == interaction.user.name), None)
+                current = (me or {}).get("bio") or "_(chưa có — dùng `/bio text:...` để thêm)_"
+                await interaction.followup.send(f"📝 Bio hiện tại của bạn:\n> {current}", ephemeral=True)
         except Exception:
             await interaction.followup.send("Chưa kết nối được Companion. Hãy thử lại sau.", ephemeral=True)
 
