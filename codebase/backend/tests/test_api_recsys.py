@@ -61,4 +61,4 @@ def test_recommendations_personalized_and_excludes_bookmarked(tmp_path, monkeypa
     store.save_profile("an", compute_hash(bio, ["1"]), "Mê CV", ["ai-model"])
     recs2 = client.get("/api/recommendations", params={"user_id": "an", "k": 3}).json()
     assert all(r["message_id"] != "1" for r in recs2)
-    assert client.get("/api/recommendations", params={"user_id": "zzz"}).status_code == 404
+    assert client.get("/api/recommendations", params={"user_id": "zzz"}).status_code == 200

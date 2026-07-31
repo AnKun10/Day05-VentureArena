@@ -1,8 +1,12 @@
-from fastapi import Depends, FastAPI, HTTPException
+from datetime import datetime, timedelta
+from typing import Literal
+
+from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from ingest.config import Config
+from ingest.schedule import build_schedule
 from ingest.store import Store
 
 import app as qa  # Q&A core POST /api/ask (Nghĩa) — mount vào cùng một server
@@ -91,6 +95,46 @@ def del_bookmark(user_id: str, message_id: str, store: Store = Depends(get_store
     return {"bookmarked": False}
 
 
+class SettingsBody(BaseModel):
+    cohort: Literal["3", "4"]
+    lt_room: str
+    lab_room: str
+
+
+@app.get("/api/users/{user_id}/settings")
+def get_user_settings(user_id: str, store: Store = Depends(get_store)):
+    store.ensure_user(user_id)
+    return store.get_settings(user_id)
+
+
+@app.put("/api/users/{user_id}/settings")
+def put_user_settings(user_id: str, body: SettingsBody, store: Store = Depends(get_store)):
+    store.ensure_user(user_id)
+    store.set_settings(user_id, body.cohort, body.lt_room, body.lab_room)
+    return store.get_settings(user_id)
+
+
+@app.get("/api/schedule")
+def get_schedule(user_id: str | None = None, cohort: str | None = None,
+                 from_: str | None = Query(None, alias="from"),
+                 to: str | None = Query(None),
+                 store: Store = Depends(get_store)):
+    if not from_ or not to:
+        today = datetime.now()
+        monday = today - timedelta(days=today.weekday())
+        sunday = monday + timedelta(days=6)
+        from_ = from_ or monday.strftime("%Y-%m-%d")
+        to = to or sunday.strftime("%Y-%m-%d")
+    if user_id:
+        store.ensure_user(user_id)
+        settings = store.get_settings(user_id)
+    else:
+        settings = {"cohort": cohort or "4", "lt_room": "D302", "lab_room": "D305"}
+    events = store.list_schedule_events(settings["cohort"], from_, to)
+    resources = store.list_resources()
+    return build_schedule(settings, events, resources, from_, to)
+
+
 @app.get("/api/recommendations")
 def recommendations(user_id: str, k: int = 6, store: Store = Depends(get_store)):
     from recsys import ensure_profile, recommend
@@ -99,8 +143,7 @@ def recommendations(user_id: str, k: int = 6, store: Store = Depends(get_store))
     except Exception as exc:
         raise HTTPException(503, detail=f"vector store unavailable: {exc}")
     _seed_users(store)
-    if store.get_user(user_id) is None:
-        raise HTTPException(404)
+    store.ensure_user(user_id)
     try:
         ensure_profile(store, vs, Config.from_env(), user_id)
     except Exception as exc:                    # inference lỗi → dùng profile cũ/fallback
