@@ -31,29 +31,51 @@ const parseHM = (hm) => {
   return h + (m || 0) / 60;
 };
 
+// URL nhận vào UI (zoom_url/jump_url) chỉ được coi là hợp lệ khi thực sự là
+// http(s) — tránh render href/target từ giá trị rác (vd chuỗi rỗng, javascript:...).
+const asHttpUrl = (url) => (/^https?:\/\//.test(url ?? "") ? url : undefined);
+
 // Chuẩn hoá 1 buổi từ /api/schedule về shape UI hiện có (cùng shape với mock SESSIONS)
 const fromApiSession = (item) => {
-  // start/end là 1 cặp: chỉ dùng cả hai khi CẢ HAI đều có giờ hợp lệ, nếu không
-  // (thiếu 1 hoặc cả 2) dùng chung khung placeholder 1 tiếng đầu ngày — tránh
-  // trường hợp {start: null, end: "20:00"} bị hiểu nhầm thành khối 12 tiếng.
+  // start/end là 1 cặp: chỉ dùng cả hai khi CẢ HAI đều có giờ hợp lệ. Nếu chỉ
+  // có start (VD CP1-CP5 thật: start có giờ, end null) → đặt khối tại đúng
+  // giờ start đó (1 tiếng), KHÔNG dồn về khung placeholder 08:00 — tránh mọi
+  // buổi thiếu end chồng lên nhau ở đầu ngày. Chỉ khi KHÔNG parse được start
+  // (thiếu cả 2, hoặc start sai định dạng) mới dùng khung placeholder + nhãn
+  // "Giờ chưa xác định".
   const hasBothTimes = item.start && item.end;
-  const start = hasBothTimes ? parseHM(item.start) : START_H;
-  const end = hasBothTimes ? parseHM(item.end) : START_H + 1;
+  const parsedStart = hasBothTimes ? null : parseHM(item.start);
+  let start, end, timeLabel;
+  if (hasBothTimes) {
+    start = parseHM(item.start);
+    end = parseHM(item.end);
+    timeLabel = `${item.start} – ${item.end}`;
+  } else if (parsedStart != null) {
+    // clamp để khối 1 tiếng luôn nằm trong lưới [START_H, END_H]
+    start = Math.min(Math.max(parsedStart, START_H), END_H - 1);
+    end = start + 1;
+    timeLabel = item.start;
+  } else {
+    start = START_H;
+    end = START_H + 1;
+    timeLabel = "Giờ chưa xác định";
+  }
   return {
     code: item.session_code || item.type,
+    key: [item.date, item.type, item.start ?? "", item.title ?? ""].join("|"),
     type: item.type,
     title: item.title,
     date: new Date(item.date + "T00:00:00"),
     start,
     end,
-    timeLabel: hasBothTimes ? `${item.start} – ${item.end}` : "Giờ chưa xác định",
+    timeLabel,
     format: item.format,
     location: item.location,
     cls: item.cohort ? "Khoá " + item.cohort : "",
     host: item.host,
-    links: { zoom: item.zoom_url || undefined },
+    links: { zoom: asHttpUrl(item.zoom_url) },
     materials: item.materials,
-    jump_url: item.jump_url,
+    jump_url: asHttpUrl(item.jump_url),
     fromApi: true,
   };
 };
@@ -223,7 +245,7 @@ export default function CalendarPage({ currentUser }) {
                   const height = (s.end - s.start) * HPX - 5;
                   return (
                     <button
-                      key={s.code}
+                      key={s.key ?? s.code}
                       onClick={() => setSelected(s)}
                       className="absolute right-1.5 left-1 overflow-hidden rounded-md px-2 py-1 text-left transition-all outline-none hover:ring-1 hover:ring-foreground/20 focus-visible:ring-2 focus-visible:ring-ring"
                       style={{
