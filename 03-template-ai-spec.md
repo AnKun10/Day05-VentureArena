@@ -4,21 +4,50 @@
 
 ```markdown
 # AI SPEC — [Tên lát cắt] · Nhóm [XX] · Zone [X]
-Hướng: [ ] A — VLearn  [ ] B — Trợ lý Học viên  [ ] C — Làn mở
-Loại: [ ] Tối ưu tính năng có sẵn  [ ] Tính năng mới
+Hướng: [ ] A — VLearn  ☑ B — Trợ lý Học viên  [ ] C — Làn mở
+Loại: [ ] Tối ưu tính năng có sẵn  ☑ Tính năng mới
 
 ## §1. User & Job
 - Job executor + workflow (đính kèm worksheet JTBD / ảnh sơ đồ):
+**Đối tượng:** Học viên AI Thực Chiến sử dụng Discord để theo dõi thông tin khóa học.
 - Core JTBD (không tên sản phẩm/AI trong câu):
+> Khi bắt đầu một ngày học, học viên muốn nhanh chóng biết những thông tin liên quan đến mình để không bỏ lỡ deadline, tài liệu và các bài chia sẻ quan trọng.
 - Problem statement (KHÔNG chữ AI):
+Học viên mất nhiều thời gian tìm lại thông tin trên Discord và vẫn có nguy cơ bỏ lỡ những nội dung quan trọng do thông tin phân tán trên nhiều kênh.
 - Evidence (chuẩn A và/hoặc B — log đầy đủ trong repo):
-  - Số liệu mining / kết quả khảo sát (n = ?, % xác nhận):
-  - ≥5 quote/ví dụ nguyên văn + nguồn:
+- Khảo sát
+Khảo sát **52 học viên AI Thực Chiến**
+| Kết quả | Giá trị |
+|---------|---------|
+| Từng hỏi lại thông tin đã có | **79,2%** |
+| Từng bỏ lỡ thông báo quan trọng | **82,7%** |
+| Mất 10–30 phút/ngày để kiểm tra Discord | **47,2%** |
+| Bỏ sót bài chia sẻ cộng đồng | **58,5%** |
+| Bỏ sót tài liệu học tập | **54,7%** |
+| Bỏ sót deadline | **50,9%** |
+| Đánh giá chatbot hữu ích hoặc rất hữu ích | **98,1%** |
+
+- Insight:
+  + Discord không thiếu thông tin; vấn đề là học viên khó truy xuất lại khi cần.
+  + Thông báo quan trọng dễ bị chìm giữa nhiều kênh.
+  + Việc theo dõi thủ công tiêu tốn thời gian mỗi ngày.
+  + Nội dung giá trị từ cộng đồng thường bị bỏ sót.
+  + Người dùng sẵn sàng sử dụng chatbot tổng hợp thông tin.
+
+- Quote:
+> "Thông báo bị trôi nên em phải hỏi lại."
+> "Em thường biết deadline vì bạn bè nhắc."
+> "Discord có quá nhiều kênh."
+> "Tìm tài liệu rất mất thời gian."
+> "Có khi mentor đăng rồi nhưng em không thấy."
 
 ## §2. Impact & quyết định chọn
-- Bảng impact ≥3 ứng viên (bao nhiêu người · tần suất · tốn gì mỗi lần · khả thi):
-- Ứng viên ĐÃ LOẠI + vì sao:
-- Ứng viên CHỌN + vì sao (bằng số):
+| Pain Point | Impact | Tần suất | Quyết định |
+|------------|---------|----------|------------|
+| Khó tìm lại thông tin | Cao | Hằng ngày | ✅ Chọn |
+| Bỏ lỡ deadline | Cao | Hằng tuần | Không chọn riêng |
+| Hỏi lặp lại | Trung bình | Thường xuyên | Không chọn |
+- Lý do chọn: Pain "khó tìm lại thông tin" có phạm vi rộng nhất và là nguyên nhân dẫn đến việc bỏ lỡ deadline, tài liệu và bài chia sẻ.
 
 ## §3. Giải pháp tương tự đã nghiên cứu
 - [Sản phẩm 1]: flow / đáng học / đáng né / mình khác gì
