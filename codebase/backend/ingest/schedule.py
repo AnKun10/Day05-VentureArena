@@ -42,10 +42,17 @@ def recurring_sessions(settings: dict, date_from: str, date_to: str) -> list[dic
 
 
 def _dedup_events(events: list[dict]) -> list[dict]:
-    """Dedup repeated announcements of the same event, keyed by (type, date, start).
+    """Dedup repeated announcements of the same evening event, keyed by
+    (type, date, start).
 
     Keeps the richer record: prefer one with a zoom_url, then one with a host,
     otherwise keep whichever was seen first.
+
+    Only applied to evening event types (WS/OH/MD/OTHER). LAB/LT events are
+    excluded from this call site — they are often partial-update announcements
+    with start=None, and multiple distinct partial updates for the same day
+    must ALL flow through the override loop in build_schedule rather than
+    collide on (type, date, start) and have one dropped.
     """
     best: dict[tuple, dict] = {}
     for e in events:
@@ -71,7 +78,9 @@ def _materials_for_event(event: dict, resources: list[dict]) -> list[dict]:
 
 def build_schedule(settings: dict, events: list[dict], resources: list[dict],
                    date_from: str, date_to: str) -> list[dict]:
-    events = _dedup_events(events)
+    lab_lt_events = [e for e in events if e.get("type") in ("LAB", "LT")]
+    evening_events = _dedup_events([e for e in events if e.get("type") not in ("LAB", "LT")])
+    events = lab_lt_events + evening_events
     items = recurring_sessions(settings, date_from, date_to)
     recurring_index = {(it["date"], it["type"]): it
                        for it in items if it["type"] in ("LAB", "LT")}

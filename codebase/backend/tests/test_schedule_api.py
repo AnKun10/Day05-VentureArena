@@ -60,6 +60,21 @@ def test_build_schedule_dedups_repeated_announcements():
     assert len(ohs) == 1 and ohs[0]["zoom_url"] == "https://z/oh2"
 
 
+def test_lab_lt_partial_updates_both_apply():
+    events = [
+        {"type": "LT", "title": "x", "date": "2026-07-27", "start": None, "end": None,
+         "cohort": "4", "format": "Offline", "zoom_url": None, "host": "Cô B",
+         "session_code": None, "jump_url": None, "location": None},
+        {"type": "LT", "title": "y", "date": "2026-07-27", "start": None, "end": None,
+         "cohort": "4", "format": "Offline", "zoom_url": None, "host": None,
+         "session_code": None, "jump_url": None, "location": "D999"},
+    ]
+    items = build_schedule(SET4, events, [], "2026-07-27", "2026-07-27")
+    lt = next(i for i in items if i["type"] == "LT")
+    assert lt["host"] == "Cô B" and lt["location"] == "D999"
+    assert len(items) == 2                                  # không sinh block LT thừa
+
+
 def _client(tmp_path, monkeypatch):
     store = Store(str(tmp_path / "t.db"))
     app.dependency_overrides[get_store] = lambda: store

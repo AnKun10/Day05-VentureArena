@@ -122,9 +122,9 @@ def get_schedule(user_id: str | None = None, cohort: str | None = None,
     if not from_ or not to:
         today = datetime.now()
         monday = today - timedelta(days=today.weekday())
-        sunday = monday + timedelta(days=6)
+        saturday = monday + timedelta(days=5)
         from_ = from_ or monday.strftime("%Y-%m-%d")
-        to = to or sunday.strftime("%Y-%m-%d")
+        to = to or saturday.strftime("%Y-%m-%d")
     if user_id:
         store.ensure_user(user_id)
         settings = store.get_settings(user_id)
