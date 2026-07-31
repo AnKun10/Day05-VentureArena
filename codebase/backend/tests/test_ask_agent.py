@@ -21,35 +21,35 @@ def test_format_resources_with_when():
 
 
 def test_answer_question_uses_injected_runner():
-    fake = lambda store, q: AskResult(found=True, answer_vi="đáp", citations=["u"])
+    fake = lambda store, q: AskResult(action="answer", answer_vi="đáp", citations=["u"])
     r = answer_question(store=None, question="hỏi gì đó", cfg=None, runner=fake)
-    assert r.found and r.answer_vi == "đáp" and r.citations == ["u"]
+    assert r.action == "answer" and r.answer_vi == "đáp" and r.citations == ["u"]
 
 
-def test_api_ask_maps_found_true(monkeypatch):
+def _map(monkeypatch, result: AskResult):
     from api.main import app, get_store
-    monkeypatch.setattr(ask, "answer_question",
-                        lambda store, q, cfg: AskResult(found=True, answer_vi="Có workshop tối nay",
-                                                        citations=["https://d/1"]))
+    monkeypatch.setattr(ask, "answer_question", lambda store, q, cfg: result)
     app.dependency_overrides[get_store] = lambda: object()
     try:
-        r = TestClient(app).post("/api/ask", json={"question": "Khi nào có workshop?"})
-        body = r.json()
-        assert body["action"] == "answer" and body["confidence"] == 1.0
-        assert body["citations"] == ["https://d/1"]
+        return TestClient(app).post("/api/ask", json={"question": "Câu hỏi kiểm thử"}).json()
     finally:
         app.dependency_overrides.clear()
+
+
+def test_api_ask_maps_answer(monkeypatch):
+    body = _map(monkeypatch, AskResult(action="answer", answer_vi="Có workshop",
+                                       citations=["https://d/1", "https://d/1"]))
+    assert body["action"] == "answer" and body["confidence"] == 1.0
+    assert body["citations"] == ["https://d/1"]           # dedup
 
 
 def test_api_ask_maps_no_info(monkeypatch):
-    from api.main import app, get_store
-    monkeypatch.setattr(ask, "answer_question",
-                        lambda store, q, cfg: AskResult(found=False,
-                                                        answer_vi="Mình chưa có thông tin", citations=[]))
-    app.dependency_overrides[get_store] = lambda: object()
-    try:
-        r = TestClient(app).post("/api/ask", json={"question": "Câu hỏi vu vơ"})
-        body = r.json()
-        assert body["action"] == "no_info" and body["confidence"] == 0.0
-    finally:
-        app.dependency_overrides.clear()
+    body = _map(monkeypatch, AskResult(action="no_info", answer_vi="Chưa có thông tin"))
+    assert body["action"] == "no_info" and body["confidence"] == 0.0
+
+
+def test_api_ask_maps_clarify_and_refuse(monkeypatch):
+    b1 = _map(monkeypatch, AskResult(action="clarify", answer_vi="Bạn hỏi buổi nào?"))
+    assert b1["action"] == "clarify" and b1["confidence"] == 0.0
+    b2 = _map(monkeypatch, AskResult(action="refuse", answer_vi="Mình không đổi điểm được"))
+    assert b2["action"] == "refuse" and b2["confidence"] == 0.0

@@ -4,6 +4,8 @@ Agent chỉ trả lời dựa trên kết quả tool (chống bịa). Với runn
 OpenAI thật; test truyền runner giả để chạy offline.
 """
 
+from typing import Literal
+
 from pydantic import BaseModel
 
 from .prompts import ASK_V1
@@ -11,7 +13,9 @@ from .retrieval import search_qa as _search_qa, search_resources as _search_reso
 
 
 class AskResult(BaseModel):
-    found: bool
+    # answer: có căn cứ | no_info: hợp lệ nhưng không có nguồn | clarify: mơ hồ,
+    # cần hỏi lại | refuse: ngoài khả năng/quyền hạn (thao tác, dữ liệu người khác...)
+    action: Literal["answer", "no_info", "clarify", "refuse"]
     answer_vi: str
     citations: list[str] = []
 

@@ -24,7 +24,7 @@ class AskRequest(BaseModel):
 
 
 class AskResponse(BaseModel):
-    action: str                       # "answer" | "no_info" | "blocked"
+    action: str                       # answer | no_info | clarify | refuse | blocked
     answer: str
     citations: list[str] = []
     confidence: float = 0.0
@@ -46,10 +46,10 @@ def ask(request: AskRequest, store: Store = Depends(get_store)) -> AskResponse:
         return AskResponse(action="no_info",
                            answer="Companion tạm thời chưa trả lời được. Bạn thử lại sau nhé.")
     return AskResponse(
-        action="answer" if result.found else "no_info",
+        action=result.action,          # answer | no_info | clarify | refuse
         answer=result.answer_vi,
         citations=list(dict.fromkeys(result.citations)),   # bỏ trùng, giữ thứ tự
-        confidence=1.0 if result.found else 0.0)
+        confidence=1.0 if result.action == "answer" else 0.0)
 
 
 _VS = None
