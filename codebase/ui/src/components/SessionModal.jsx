@@ -115,6 +115,18 @@ export default function SessionModal({ session: s, onClose }) {
                 </Button>
               ))}
             </div>
+          ) : s.fromApi ? (
+            // Buổi từ API không có materials — chỉ hiện thứ có thật (Zoom), không
+            // vẽ placeholder Slide/Record/Tài liệu "chưa có" (không có trong API schema).
+            s.links?.zoom ? (
+              <div className="flex flex-wrap gap-2">
+                <Button variant="default" size="sm" onClick={() => openInNewTab(s.links.zoom)}>
+                  <Video /> Tham gia Zoom
+                </Button>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">Chưa có tài liệu</p>
+            )
           ) : (
             <div className="flex flex-wrap gap-2">
               {available.map(({ key, label, icon: Icon }) => (

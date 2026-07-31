@@ -33,24 +33,28 @@ const parseHM = (hm) => {
 
 // Chuẩn hoá 1 buổi từ /api/schedule về shape UI hiện có (cùng shape với mock SESSIONS)
 const fromApiSession = (item) => {
-  const start = parseHM(item.start);
-  const end = parseHM(item.end);
+  // start/end là 1 cặp: chỉ dùng cả hai khi CẢ HAI đều có giờ hợp lệ, nếu không
+  // (thiếu 1 hoặc cả 2) dùng chung khung placeholder 1 tiếng đầu ngày — tránh
+  // trường hợp {start: null, end: "20:00"} bị hiểu nhầm thành khối 12 tiếng.
+  const hasBothTimes = item.start && item.end;
+  const start = hasBothTimes ? parseHM(item.start) : START_H;
+  const end = hasBothTimes ? parseHM(item.end) : START_H + 1;
   return {
     code: item.session_code || item.type,
     type: item.type,
     title: item.title,
     date: new Date(item.date + "T00:00:00"),
-    // thiếu giờ → đặt tạm 1 khung 1 tiếng đầu ngày để vẫn hiển thị được trên lưới
-    start: start ?? START_H,
-    end: end ?? (start ?? START_H) + 1,
-    timeLabel: item.start && item.end ? `${item.start} – ${item.end}` : "Giờ chưa xác định",
+    start,
+    end,
+    timeLabel: hasBothTimes ? `${item.start} – ${item.end}` : "Giờ chưa xác định",
     format: item.format,
     location: item.location,
-    cls: "Khoá " + item.cohort,
+    cls: item.cohort ? "Khoá " + item.cohort : "",
     host: item.host,
     links: { zoom: item.zoom_url || undefined },
     materials: item.materials,
     jump_url: item.jump_url,
+    fromApi: true,
   };
 };
 
