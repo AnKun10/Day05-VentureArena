@@ -41,7 +41,9 @@ def cosine(a, b) -> float:
     return dot / (na * nb) if na and nb else 0.0
 
 
-def _snippet(body: str, query: set[str], limit: int = 240) -> str:
+def _snippet(body: str, query: set[str], limit: int = 500) -> str:
+    """Trả đoạn khớp nhất, nhưng ĐỦ DÀI (500) để chứa trọn cách làm/dữ kiện —
+    tránh cắt cụt khiến agent phải tự chế thông tin generic ngoài nguồn."""
     parts = [p.strip() for p in re.split(r"[\r\n]+|(?<=[.!?])\s+", body or "") if p.strip()]
     if not parts:
         return (body or "")[:limit]
@@ -128,3 +130,16 @@ def search_resources(store, query: str, k: int = 6) -> list[dict]:
         out.append({"source": "lịch", "kind": "zoom", "title": e.get("title") or "",
                     "url": e.get("zoom_url") or "", "when": when})
     return out[: k + k]
+
+
+def search_news(news_items, emb_map, query, embed=None, k=20):
+    """Hybrid search (lexical token-overlap + semantic cosine, RRF rerank) trên
+    bản tin cộng đồng. CHỈ dùng heading (title) + tóm tắt (summary) — KHÔNG dùng
+    comment hay nội dung body. Không có embedder → hạ cấp lexical."""
+    cands = []
+    for n in news_items:
+        key = "news:" + n["message_id"]
+        cands.append({**n, "_id": key, "_emb": emb_map.get(key),
+                      "_text": f"{n.get('title', '')} {n.get('summary', '')}"})
+    hits = _retrieve(query, cands, embed, k)
+    return [{kk: vv for kk, vv in c.items() if not str(kk).startswith("_")} for c in hits]

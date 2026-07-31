@@ -103,3 +103,19 @@ def test_search_resources_includes_zoom_from_schedule():
 def test_search_resources_no_match_returns_empty():
     store = FakeStore(resources=[{"kind": "doc", "title": "abc", "url": "u"}])
     assert search_resources(store, "xyz không liên quan gì") == []
+
+
+def test_search_news_uses_title_summary_not_comment():
+    from ask.retrieval import search_news
+    news = [
+        {"message_id": "1", "title": "Prompt Injection phòng chống",
+         "summary": "cách chống injection", "content": "ZZKEYWORD trong body", "tags": ["ai-model"]},
+        {"message_id": "2", "title": "UI/UX design", "summary": "thiết kế giao diện",
+         "content": "x", "tags": ["ui-ux"]},
+    ]
+    out = search_news(news, {}, "prompt injection", embed=None, k=5)
+    assert out and out[0]["message_id"] == "1"
+    # từ khoá chỉ có trong content/comment (không phải title/summary) → KHÔNG match
+    assert search_news(news, {}, "ZZKEYWORD", embed=None, k=5) == []
+    # helper keys _id/_emb/_text bị loại khỏi kết quả trả về
+    assert all(not str(k).startswith("_") for k in out[0])

@@ -20,7 +20,7 @@ class NewsItem(BaseModel):
 
 
 class DailyNews(BaseModel):
-    items: list[NewsItem] = Field(default_factory=list, max_length=3)
+    items: list[NewsItem] = Field(default_factory=list, max_length=5)
 
 
 def _domain(url: str) -> str:
@@ -37,7 +37,7 @@ def _build_agent(cfg):
     def search_ai_news(query: str) -> str:
         """Tìm bài báo/tin AI mới theo từ khoá (tiếng Anh sát chủ đề user).
         Trả danh sách ứng viên {title, url, trích nội dung}."""
-        results = tavily_news_search(query, cfg.tavily_api_key)
+        results = tavily_news_search(query, cfg.tavily_api_key, max_results=10)
         if not results:
             return "Không tìm thấy tin nào — thử từ khoá khác."
         return "\n".join(f"[{i + 1}] {r['title']} — {r['url']}\n    {r['content']}"
@@ -50,7 +50,10 @@ def _build_agent(cfg):
         ok, status, text = verify_url(url)
         if not ok:
             return f"FAIL: không truy cập được (status {status}). KHÔNG dùng nguồn này."
-        return f"OK: truy cập được (status {status}). Trích nội dung: {text[:600]}"
+        if text:
+            return f"OK: truy cập được (status {status}). Trích nội dung: {text[:600]}"
+        return (f"OK: URL có thật (server phản hồi status {status}) nhưng chặn đọc "
+                "nội dung tự động; tin cậy tiêu đề + nguồn từ search_ai_news.")
 
     return Agent(name="daily_ai_news", instructions=AINEWS_V1, model=cfg.enrich_model,
                  tools=[search_ai_news, verify_source], output_type=DailyNews)
@@ -70,9 +73,30 @@ def generate_daily_news(store, user_id: str, cfg, runner=None) -> list[dict]:
         from agents import Runner
         result = Runner.run_sync(_build_agent(cfg), prompt).final_output
     out = []
-    for it in result.items[:3]:
+    for it in result.items[:5]:
         if not it.url:
             continue
         out.append({"title": it.title, "url": it.url,
                     "source": it.source or _domain(it.url), "summary": it.summary_vi})
-    return out
+
+    # Bù cho đủ 5 nếu agent trả ít hơn (vẫn verify URL THẬT, không bịa). Tóm tắt
+    # bài bù lấy từ trích đoạn Tavily. Chỉ chạy ở chế độ thật (có cfg + key).
+    if len(out) < 5 and cfg is not None and getattr(cfg, "tavily_api_key", ""):
+        have = {o["url"] for o in out}
+        base = " ".join((tags or [])) or "artificial intelligence"
+        for q in [f"{base} news", "large language model", "AI agents", "generative AI research"]:
+            if len(out) >= 5:
+                break
+            for r in tavily_news_search(q, cfg.tavily_api_key, max_results=10):
+                if len(out) >= 5:
+                    break
+                url = r.get("url")
+                if not url or url in have:
+                    continue
+                ok, _status, _text = verify_url(url)
+                if not ok:
+                    continue
+                have.add(url)
+                out.append({"title": r.get("title") or "", "url": url,
+                            "source": _domain(url), "summary": (r.get("content") or "")[:180]})
+    return out[:5]

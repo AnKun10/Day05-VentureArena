@@ -76,6 +76,22 @@ def list_news(tag: str | None = None, store: Store = Depends(get_store)):
     return store.list_news(tag=tag)
 
 
+@app.get("/api/news/search")
+def news_search(q: str, k: int = 20, store: Store = Depends(get_store)):
+    """Hybrid search (lexical + semantic RRF rerank) trên bản tin — chỉ theo
+    heading + tóm tắt, KHÔNG dùng comment."""
+    from ask.retrieval import search_news
+    from recsys.embedder import embed_texts
+    cfg = Config.from_env()
+
+    def _embed(text):
+        return embed_texts([text], cfg)[0]
+
+    if not (q or "").strip():
+        return []
+    return search_news(store.list_news(), store.get_ask_embeddings(), q, _embed, k)
+
+
 @app.get("/api/news/{message_id}")
 def news_detail(message_id: str, store: Store = Depends(get_store)):
     news = store.get_news(message_id)
@@ -189,14 +205,14 @@ def get_schedule(user_id: str | None = None, cohort: str | None = None,
 
 
 @app.get("/api/ai-news")
-def ai_news(user_id: str, store: Store = Depends(get_store)):
+def ai_news(user_id: str, k: int = 5, store: Store = Depends(get_store)):
     """Daily AI News ca nhan hoa - cache theo (user, ngay). Lan dau trong ngay
     chay agent (Tavily crawl + verify source); cac lan sau lay cache."""
     store.ensure_user(user_id)
     today = datetime.now().strftime("%Y-%m-%d")
     cached = store.get_ai_news(user_id, today)
     if cached:
-        return {"date": today, "items": cached, "cached": True}
+        return {"date": today, "items": cached[:k], "cached": True}
     from ai_news import generate_daily_news
     try:
         items = generate_daily_news(store, user_id, Config.from_env())
@@ -205,7 +221,7 @@ def ai_news(user_id: str, store: Store = Depends(get_store)):
         return {"date": today, "items": [], "cached": False}
     if items:
         store.save_ai_news(user_id, today, items)
-    return {"date": today, "items": items, "cached": False}
+    return {"date": today, "items": items[:k], "cached": False}
 
 
 @app.get("/api/recommendations")

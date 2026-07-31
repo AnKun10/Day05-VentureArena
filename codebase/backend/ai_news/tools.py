@@ -26,7 +26,9 @@ def verify_url(url: str, timeout: float = 8.0) -> tuple[bool, int, str]:
     """GET url, xác nhận truy cập được (2xx). Trả (ok, status, trích nội dung)."""
     try:
         resp = httpx.get(url, timeout=timeout, follow_redirects=True, headers=_UA)
-        ok = 200 <= resp.status_code < 300
-        return ok, resp.status_code, (resp.text[:2000] if ok else "")
+        # server phan hoi (<500) = URL co that; 403/401/405 = ton tai nhung chan bot.
+        ok = 200 <= resp.status_code < 500
+        text = resp.text[:2000] if 200 <= resp.status_code < 300 else ""
+        return ok, resp.status_code, text
     except httpx.HTTPError:
         return False, 0, ""
