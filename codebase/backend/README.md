@@ -151,3 +151,16 @@ python -m ask.ingest_kb ../../data/discord_kb_v0.1-provisional
 # → ingest 109/132 chunk (loại 23: 17 personal_data + 6 internal_only)
 ```
 `search_qa` tra KB chunks + bản tin (hybrid RRF), trả citation là link Discord gốc.
+
+### Làm mới news + schedule từ KB (ask/kb_refresh.py)
+Sau khi ingest KB, đồng bộ 2 view dẫn xuất với chính sách access của gói:
+```bash
+python -m ask.kb_refresh ../../data/discord_kb_v0.1-provisional
+```
+- **Governance**: gỡ khỏi news mọi post KB gắn nhạy cảm (personal_data/internal_only)
+  → feed học viên tuân thủ như /ask (lần chạy: gỡ 5 post).
+- **Schedule**: `clear_schedule_events` rồi re-extract sự kiện tối từ announcements
+  KB (messages_clean, sensitivity=none) — nguồn đã lọc, sạch hơn crawl thô.
+- **News re-enrich (force)**: làm mới tóm tắt/tag/ảnh, GIỮ nguyên content +
+  engagement (hearts/comment) + author (KB không có count reaction đáng tin nên
+  không rebuild post từ KB để tránh mất engagement).

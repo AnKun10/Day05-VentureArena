@@ -139,6 +139,17 @@ class Store:
             (_now(), message_id))
         self.conn.commit()
 
+    def delete_post(self, message_id: str) -> None:
+        self.conn.execute("DELETE FROM posts WHERE message_id=?", (message_id,))
+        self.conn.execute("DELETE FROM comments WHERE post_id=?", (message_id,))
+        self.conn.commit()
+
+    def clear_schedule_events(self) -> None:
+        """Xoá toàn bộ sự kiện trích + dấu extract-once (để re-extract từ nguồn mới)."""
+        self.conn.execute("DELETE FROM schedule_events")
+        self.conn.execute("DELETE FROM schedule_extracted")
+        self.conn.commit()
+
     def get_checkpoint(self, channel: str) -> int:
         row = self.conn.execute(
             "SELECT value FROM ingest_state WHERE key=?", (f"ckpt:{channel}",)).fetchone()
