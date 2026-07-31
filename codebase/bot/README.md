@@ -14,6 +14,23 @@ uv run --no-project --with-requirements codebase/bot/requirements.txt python cod
 
 `/ask` gọi `COMPANION_API_URL/api/ask` (backend `codebase/backend` — chạy `uvicorn api.main:app --port 8000`).
 
+### 4 slash commands
+
+- `/ask <question>` — hỏi Companion (RAG), trả lời kèm nguồn trích dẫn.
+- `/schedule [date]` — lịch học của người dùng theo ngày (`date` dạng `YYYY-MM-DD`,
+  tuỳ chọn, mặc định là hôm nay theo giờ máy chạy bot). Gọi
+  `GET /api/schedule?user_id=<username>&from=<date>&to=<date>` và
+  `GET /api/users/<username>/settings` để lấy khoá (cohort), rồi định dạng bằng
+  `companion_discord.formatting.format_schedule` — nhóm buổi học theo Sáng/Chiều/Tối.
+- `/digest [option]` — bản tin mới nhất (`option=latest`, mặc định) từ
+  `GET /api/news` (10 bài đầu, nhóm theo tag) hoặc gợi ý cá nhân hoá
+  (`option=personalize`) từ `GET /api/recommendations?user_id=<username>&k=10`
+  (không nhóm, mỗi bài có tiền tố `✨<%>` theo độ tương đồng), định dạng bằng
+  `companion_discord.formatting.format_digest`.
+- `/hub` — trả về link Companion Web UI kèm `?user=<username>`, đọc từ biến môi
+  trường `COMPANION_UI_URL` (mặc định `http://localhost:5173` nếu chưa cấu hình
+  trong `.env`).
+
 ## Rebuild server đích (destination-only)
 
 Cần `data/discord_crawl/manifest.json` + `config.yaml` (copy từ `config.example.yaml`), và `DISCORD_TOKEN` + `DESTINATION_GUILD_ID` trong `codebase/bot/.env`. Để tái dùng kênh đích có sẵn, khai IDs trong `discord_bot.destination_channel_mappings` — rebuild validate guild/type/quyền gửi, không bao giờ match theo tên.
