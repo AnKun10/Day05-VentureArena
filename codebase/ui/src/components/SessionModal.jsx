@@ -31,9 +31,13 @@ const LINK_DEFS = [
 ];
 
 export default function SessionModal({ session: s, onClose }) {
-  const t = SESSION_TYPES[s.type];
+  // SESSION_TYPES không có "OTHER" (buổi từ API) — dùng lại palette OH.
+  const t = SESSION_TYPES[s.type] ?? SESSION_TYPES.OH;
   const available = LINK_DEFS.filter((l) => s.links?.[l.key]);
   const missing = LINK_DEFS.filter((l) => !s.links?.[l.key] && l.key !== "zoom");
+  const hasSummary = Boolean(s.desc) || Boolean(s.summary?.length);
+  const hasMaterials = Array.isArray(s.materials) && s.materials.length > 0;
+  const openInNewTab = (url) => window.open(url, "_blank", "noopener,noreferrer");
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
@@ -72,47 +76,68 @@ export default function SessionModal({ session: s, onClose }) {
           <Info icon={UserRound} label="Phụ trách / Diễn giả" value={s.host} />
         </div>
 
-        {/* Tóm tắt nội dung */}
-        <div>
-          <SectionTitle icon={BookOpenText}>Tóm tắt nội dung</SectionTitle>
-          {s.desc && (
-            <p className="mb-2.5 text-sm leading-relaxed text-muted-foreground">{s.desc}</p>
-          )}
-          {s.summary?.length > 0 && (
-            <ul className="space-y-2">
-              {s.summary.map((line, i) => (
-                <li key={i} className="flex gap-2.5 text-sm leading-relaxed">
-                  <span
-                    className="mt-[7px] size-1.5 shrink-0 rounded-full"
-                    style={{ background: t.color }}
-                  />
-                  {line}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        {/* Tóm tắt nội dung — API thật không có desc/summary → ẩn cả block */}
+        {hasSummary && (
+          <div>
+            <SectionTitle icon={BookOpenText}>Tóm tắt nội dung</SectionTitle>
+            {s.desc && (
+              <p className="mb-2.5 text-sm leading-relaxed text-muted-foreground">{s.desc}</p>
+            )}
+            {s.summary?.length > 0 && (
+              <ul className="space-y-2">
+                {s.summary.map((line, i) => (
+                  <li key={i} className="flex gap-2.5 text-sm leading-relaxed">
+                    <span
+                      className="mt-[7px] size-1.5 shrink-0 rounded-full"
+                      style={{ background: t.color }}
+                    />
+                    {line}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
 
         {/* Tài liệu */}
         <div>
           <SectionTitle icon={FileText}>Tài liệu buổi học</SectionTitle>
-          <div className="flex flex-wrap gap-2">
-            {available.map(({ key, label, icon: Icon }) => (
-              <Button
-                key={key}
-                variant={key === "zoom" ? "default" : "outline"}
-                size="sm"
-                onClick={(e) => e.preventDefault()}
-              >
-                <Icon /> {label}
-              </Button>
-            ))}
-            {missing.map(({ key, label, icon: Icon }) => (
-              <Button key={key} variant="outline" size="sm" disabled>
-                <Icon /> {label} · chưa có
-              </Button>
-            ))}
-          </div>
+          {hasMaterials ? (
+            <div className="flex flex-wrap gap-2">
+              {s.links?.zoom && (
+                <Button variant="default" size="sm" onClick={() => openInNewTab(s.links.zoom)}>
+                  <Video /> Tham gia Zoom
+                </Button>
+              )}
+              {s.materials.map((m, i) => (
+                <Button key={i} variant="outline" size="sm" onClick={() => openInNewTab(m.url)}>
+                  <FileText /> {m.label}
+                </Button>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {available.map(({ key, label, icon: Icon }) => (
+                <Button
+                  key={key}
+                  variant={key === "zoom" ? "default" : "outline"}
+                  size="sm"
+                  onClick={
+                    key === "zoom" && s.links?.zoom
+                      ? () => openInNewTab(s.links.zoom)
+                      : (e) => e.preventDefault()
+                  }
+                >
+                  <Icon /> {label}
+                </Button>
+              ))}
+              {missing.map(({ key, label, icon: Icon }) => (
+                <Button key={key} variant="outline" size="sm" disabled>
+                  <Icon /> {label} · chưa có
+                </Button>
+              ))}
+            </div>
+          )}
           <p className="mt-2 text-xs text-muted-foreground">
             Slide/record đăng tại <span className="font-mono">#tài-nguyên</span> sẽ tự động gắn vào
             block buổi này (Session Linker).
@@ -121,8 +146,23 @@ export default function SessionModal({ session: s, onClose }) {
 
         <DialogFooter className="-mx-6 -mb-6 items-center gap-2 px-6 sm:justify-between">
           <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Radio className="size-3" />
-            Nguồn: <span className="font-mono">{s.source.channel}</span> · cập nhật {s.source.updated}
+            {s.source ? (
+              <>
+                <Radio className="size-3" />
+                Nguồn: <span className="font-mono">{s.source.channel}</span> · cập nhật{" "}
+                {s.source.updated}
+              </>
+            ) : s.jump_url ? (
+              <a
+                href={s.jump_url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 text-primary hover:underline"
+              >
+                <Radio className="size-3" />
+                Xem thông báo gốc
+              </a>
+            ) : null}
           </span>
           <span className="text-xs text-muted-foreground">
             Chưa rõ? Hỏi Companion:{" "}

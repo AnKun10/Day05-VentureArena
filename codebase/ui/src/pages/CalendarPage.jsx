@@ -9,6 +9,7 @@ import {
   isSameDay,
 } from "../data/mock.js";
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import SessionModal from "../components/SessionModal.jsx";
 
@@ -17,7 +18,43 @@ const END_H = 23;
 const HPX = 52; // px mỗi giờ
 const DAY_LABELS = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
 
-export default function CalendarPage() {
+// SESSION_TYPES không có "OTHER" — dùng lại palette OH (theo brief) khi type lạ.
+const typeStyle = (type) => SESSION_TYPES[type] ?? SESSION_TYPES.OH;
+
+const toISODate = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+// "HH:MM" → số thập phân giờ (VD "19:30" → 19.5); null nếu thiếu.
+const parseHM = (hm) => {
+  if (!hm) return null;
+  const [h, m] = hm.split(":").map(Number);
+  return h + (m || 0) / 60;
+};
+
+// Chuẩn hoá 1 buổi từ /api/schedule về shape UI hiện có (cùng shape với mock SESSIONS)
+const fromApiSession = (item) => {
+  const start = parseHM(item.start);
+  const end = parseHM(item.end);
+  return {
+    code: item.session_code || item.type,
+    type: item.type,
+    title: item.title,
+    date: new Date(item.date + "T00:00:00"),
+    // thiếu giờ → đặt tạm 1 khung 1 tiếng đầu ngày để vẫn hiển thị được trên lưới
+    start: start ?? START_H,
+    end: end ?? (start ?? START_H) + 1,
+    timeLabel: item.start && item.end ? `${item.start} – ${item.end}` : "Giờ chưa xác định",
+    format: item.format,
+    location: item.location,
+    cls: "Khoá " + item.cohort,
+    host: item.host,
+    links: { zoom: item.zoom_url || undefined },
+    materials: item.materials,
+    jump_url: item.jump_url,
+  };
+};
+
+export default function CalendarPage({ currentUser }) {
   const [weekOffset, setWeekOffset] = useState(0);
   const [selected, setSelected] = useState(null);
   const scrollRef = useRef(null);
@@ -29,9 +66,31 @@ export default function CalendarPage() {
     [monday.getTime()]
   );
 
+  // Lịch thật từ backend theo user + tuần đang xem; lỗi/offline/chưa có user → null (dùng mock)
+  const [apiSessions, setApiSessions] = useState(null);
+  const scheduleSeq = useRef(0);
+
+  useEffect(() => {
+    if (currentUser == null) return;
+    const seq = ++scheduleSeq.current;
+    const from = toISODate(monday);
+    const to = toISODate(addDays(monday, 6));
+    api
+      .schedule(currentUser, from, to)
+      .then((list) => {
+        if (seq !== scheduleSeq.current) return;
+        setApiSessions(list.map(fromApiSession));
+      })
+      .catch(() => {
+        if (seq !== scheduleSeq.current) return;
+        setApiSessions(null);
+      });
+  }, [currentUser, weekOffset]);
+
+  const sourceSessions = apiSessions ?? SESSIONS;
   const sessionsByDay = useMemo(
-    () => days.map((d) => SESSIONS.filter((s) => isSameDay(s.date, d))),
-    [days]
+    () => days.map((d) => sourceSessions.filter((s) => isSameDay(s.date, d))),
+    [days, sourceSessions]
   );
 
   // mở trang là cuộn tới khung giờ có lớp (≈17:00)
@@ -155,7 +214,7 @@ export default function CalendarPage() {
                 )}
 
                 {sessionsByDay[di].map((s) => {
-                  const t = SESSION_TYPES[s.type];
+                  const t = typeStyle(s.type);
                   const top = (s.start - START_H) * HPX + 2;
                   const height = (s.end - s.start) * HPX - 5;
                   return (
