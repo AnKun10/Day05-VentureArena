@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Sidebar from "./components/Sidebar.jsx";
 import CalendarPage from "./pages/CalendarPage.jsx";
 import ResourcesPage from "./pages/ResourcesPage.jsx";
@@ -26,6 +26,11 @@ export default function App() {
       .catch(() => setUsers(null));
   }, []);
 
+  // Nạp lại danh sách user (VD: sau khi sửa bio) mà không đụng tới currentUser đang chọn
+  const refreshUsers = useCallback(() => {
+    api.users().then(setUsers).catch(() => {});
+  }, []);
+
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar page={page} onNavigate={setPage} />
@@ -33,10 +38,20 @@ export default function App() {
         {page === "calendar" && <CalendarPage />}
         {page === "resources" && <ResourcesPage />}
         {page === "news" && (
-          <NewsPage users={users} currentUser={currentUser} onSelectUser={setCurrentUser} />
+          <NewsPage
+            users={users}
+            currentUser={currentUser}
+            onSelectUser={setCurrentUser}
+            refreshUsers={refreshUsers}
+          />
         )}
         {page === "settings" && (
-          <SettingsPage users={users} currentUser={currentUser} onSelectUser={setCurrentUser} />
+          <SettingsPage
+            users={users}
+            currentUser={currentUser}
+            onSelectUser={setCurrentUser}
+            refreshUsers={refreshUsers}
+          />
         )}
       </main>
     </div>

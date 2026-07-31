@@ -36,7 +36,7 @@ const fromApi = (n) => {
   };
 };
 
-export default function NewsPage({ users, currentUser, onSelectUser }) {
+export default function NewsPage({ users, currentUser, onSelectUser, refreshUsers }) {
   const [tag, setTag] = useState("all");
   const [selected, setSelected] = useState(null);
   const [bookmarks, setBookmarks] = useState(() => new Set());
@@ -122,6 +122,7 @@ export default function NewsPage({ users, currentUser, onSelectUser }) {
       .then(() => {
         setBioOpen(false);
         fetchRecs(currentUser);
+        refreshUsers?.();
       })
       .catch(() => {});
   };

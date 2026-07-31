@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -9,13 +9,16 @@ export default function SettingsPage({ users, currentUser, onSelectUser }) {
   const [ltRoom, setLtRoom] = useState("");
   const [labRoom, setLabRoom] = useState("");
   const [saved, setSaved] = useState(false);
+  const settingsSeq = useRef(0);
 
-  // Đổi user → nạp lại thiết lập của user đó
+  // Đổi user → nạp lại thiết lập của user đó (guard chống race khi đổi user liên tục)
   useEffect(() => {
     if (currentUser == null) return;
+    const seq = ++settingsSeq.current;
     api
       .settings(currentUser)
       .then((s) => {
+        if (seq !== settingsSeq.current) return;
         setCohort(s.cohort ?? "3");
         setLtRoom(s.lt_room ?? "");
         setLabRoom(s.lab_room ?? "");
