@@ -35,6 +35,8 @@ def _embed_from(data: dict) -> discord.Embed:
                           description=data.get("description"))
     for field in data.get("fields", []):
         embed.add_field(name=field["name"], value=field["value"], inline=field["inline"])
+    if data.get("footer"):
+        embed.set_footer(text=data["footer"])
     return embed
 
 

@@ -162,15 +162,23 @@ def digest_embed(items: list[dict], personalized: bool) -> dict:
 
     if personalized:
         lines = []
+        any_sim = False
         for item in items:
             sim = (item.get("parts") or {}).get("sim") or 0
-            lines.append(_digest_line(item, prefix=f"✨ **{round(sim * 100)}%** · "))
-        return {
+            # sim = 0 (chưa có hồ sơ sở thích) → ẩn % thay vì hiện "0%" gây hiểu lầm
+            prefix = f"✨ **{round(sim * 100)}%** · " if sim > 0 else ""
+            any_sim = any_sim or sim > 0
+            lines.append(_digest_line(item, prefix=prefix))
+        embed = {
             "title": "✨ Gợi ý dành riêng cho bạn",
             "color": COLOR_PERSONAL,
             "description": _join_capped(lines, 4000),
             "fields": [],
         }
+        if not any_sim:
+            embed["footer"] = ("💡 Chưa có hồ sơ sở thích — mở /hub, vào trang Bản tin "
+                               "để thêm bio hoặc bookmark bài viết, gợi ý sẽ sát bạn hơn.")
+        return embed
 
     groups: dict[str, list[dict]] = {}
     order: list[str] = []

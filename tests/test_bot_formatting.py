@@ -134,13 +134,22 @@ def test_digest_embed_clips_title_and_summary():
 def test_digest_embed_personalized_prefix_and_no_groups():
     items = [
         _news(title="Gợi ý 1", parts={"sim": 0.87}),
-        _news(title="Gợi ý 2", parts={}),             # thiếu sim → 0%
+        _news(title="Gợi ý 2", parts={}),             # thiếu sim → ẩn %
     ]
     embed = digest_embed(items, personalized=True)
     assert embed["title"] == "✨ Gợi ý dành riêng cho bạn"
     assert embed["fields"] == []
     assert "✨ **87%** · [**Gợi ý 1**](https://discord.com/x)" in embed["description"]
-    assert "✨ **0%** · [**Gợi ý 2**]" in embed["description"]
+    assert "• [**Gợi ý 2**]" in embed["description"] and "0%" not in embed["description"]
+    assert "footer" not in embed                      # có ít nhất 1 sim > 0
+
+
+def test_digest_embed_personalized_no_profile_footer():
+    # toàn bộ sim = 0 (user chưa có bio/bookmark) → ẩn % + footer hướng dẫn
+    items = [_news(title="Bài A", parts={}), _news(title="Bài B", parts={"sim": 0})]
+    embed = digest_embed(items, personalized=True)
+    assert "%" not in embed["description"]
+    assert "/hub" in embed["footer"] and "bio" in embed["footer"]
 
 
 def test_tag_labels_complete():
