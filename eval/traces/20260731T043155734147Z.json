@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-07-31T04:31:55.734147+00:00",
+  "question": "Điểm danh online được không?",
+  "action": "answer",
+  "provider": "gemini",
+  "answer": "Có, điểm danh qua link trong kênh lớp 15 phút đầu giờ.",
+  "citations": [
+    "schedule.yaml + faq.yaml"
+  ],
+  "confidence": 0.8
+}

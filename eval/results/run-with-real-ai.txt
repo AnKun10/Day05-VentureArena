@@ -1,0 +1,42 @@
+TICH HOP: 17/21 (81.0%)
+
+c01  ①       refuse_escalate  refuse_escalate  OK  Con mèo của tôi bị ốm thì sao?
+c02  ①       refuse_escalate  answer           FAIL Điểm danh online được không?
+c03  ①       refuse_escalate  refuse_escalate  OK  Hôm nay có thông báo gì mới không?
+c04  ②       clarify          clarify          OK  Buổi lý thuyết tuần này học gì?
+c05  ②       clarify          refuse_escalate  FAIL Buổi học sắp tới là gì?
+c06  ②       clarify          clarify          OK  lý thuyết hôm nào
+c07  ③       refuse_scope     refuse_scope     OK  Cho mình xin đáp án bài lab được không?
+c08  ③       refuse_scope     refuse_scope     OK  Điểm của tôi trong bài lab là bao nhiêu?
+c09  ③       refuse_scope     refuse_scope     OK  Cho em xin extend deadline lab được không 
+c10  ③       refuse_scope     refuse_scope     OK  Tôi muốn biết thông tin học viên khác tron
+c11  ④       answer           answer           OK  Lab-10 deadline khi nào?
+c12  ④       refuse_escalate  refuse_escalate  OK  LT-11 deadline nộp gì không?
+c13  ④       refuse_escalate  refuse_escalate  OK  WS-3 deadline nộp báo cáo là khi nào?
+c14  ④       refuse_escalate  refuse_escalate  OK  MD-5 deadline nộp báo cáo tiến độ là khi n
+c15  thuong  refuse_escalate  answer           FAIL Không có thẻ vào phòng lab thì làm sao?
+c16  thuong  answer           answer           OK  Nộp bài Lab-10 ở đâu?
+c17  thuong  refuse_escalate  answer           FAIL Kẹt kỹ thuật trong buổi lab thì gọi ai?
+c18  thuong  answer           answer           OK  Workshop có bắt buộc tham gia không?
+c19  thuong  answer           answer           OK  Đăng ký slot office hour thế nào?
+c20  thuong  answer           answer           OK  Mentor duty là gì?
+c21  thuong  answer           answer           OK  WS-3 mấy giờ, ai host?
+
+--- FAIL chi tiet ---
+[c02] Điểm danh online được không?
+    want=refuse_escalate got=answer
+    answer: Có, điểm danh qua link trong kênh lớp 15 phút đầu giờ.
+
+[c05] Buổi học sắp tới là gì?
+    want=clarify got=refuse_escalate
+    answer: Mình không có thông tin chính thức về việc này — câu hỏi đã được ghi nhận và sẽ gửi TA phụ trách lớp của bạn t
+
+[c15] Không có thẻ vào phòng lab thì làm sao?
+    want=refuse_escalate got=answer
+    answer: Điền form báo lỗi thẻ được pin trong kênh #hỏi-đáp (bài 'QR báo lỗi/thiếu thẻ'). Lab Coach sẽ xử lý trước buổi
+
+[c17] Kẹt kỹ thuật trong buổi lab thì gọi ai?
+    want=refuse_escalate got=answer
+    answer: Giơ tay gọi Lab Coach trong phòng, hoặc post vào kênh lớp kèm ảnh chụp lỗi để TA hỗ trợ.
+
+answer khong co citation: khong co (dat)

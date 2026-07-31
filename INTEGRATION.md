@@ -124,20 +124,62 @@ Ba thứ phải sửa mới gọi được, đều phát hiện bằng cách g�
 | Model mặc định `gemini-3.5-flash` → 404 (không tồn tại); `gemini-2.0-flash*` → 429 `limit: 0` | Dò 42 model của key, chỉ **`gemini-2.5-flash-lite`** còn hạn mức |
 | Lượt đo đầu: `"Lab-10 deadline khi nào?"` bị model phán `ambiguous` dù đã nêu rõ mã buổi | Sửa prompt: nêu rõ có mã buổi khớp SOURCE thì KHÔNG phải mơ hồ, thêm ví dụ cho từng verdict → 5/5 đúng |
 
-### ⚠️ Hạn mức rất gắt — ảnh hưởng trực tiếp tới demo
+### Model dùng được PHỤ THUỘC VÀO KEY — phải dò lại mỗi lần đổi key
 
-Key hackathon đo được: **`GenerateRequestsPerDayPerProjectPerModel-FreeTier` = 20 request/NGÀY**,
-và ~29 giây giữa hai lần gọi. Gọi 5 lần liên tiếp thì lần thứ 2 đã 429.
+Đã gặp thật với 2 key khác nhau, kết quả ngược hẳn nhau:
 
-Hệ quả thật: chạy trọn golden set 21 case thì **chỉ 1 case dùng được AI**, 20 case còn lại lặng lẽ rơi
-về rule-based (nên điểm đo ra là 18/21 — của đường lui, không phải của AI).
+| Model | Key #1 | Key #2 (đang dùng) |
+|---|---|---|
+| `gemini-3.5-flash` | 404 — không tồn tại | ✅ chạy |
+| `gemini-2.5-flash-lite` | ✅ chạy | 404 — "no longer available" |
+| `gemini-2.0-flash*` | 429 `limit: 0` | 404 |
 
-Đã thêm **cache verdict** (`codebase/backend/.ai_cache.json`) để tập demo không đốt quota: câu đã hỏi
-lấy lại kết quả AI thật cũ, quota để dành cho **câu lạ giám khảo hỏi tại chỗ** — đúng lúc bắt buộc phải
-gọi thật. Tắt cache: `AI_CACHE=0`.
+**Dò model cho key mới:**
 
-**Trước buổi demo nên làm:** xin thêm 1-2 key Gemini từ tài khoản Google khác (mỗi project 20 req/ngày),
-hoặc thêm `OPENROUTER_API_KEY` — chuỗi fallback tự chuyển provider khi provider đầu hết hạn mức.
+```bash
+KEY=<key của bạn>
+# 1. Liệt kê model key này thấy
+curl -s "https://generativelanguage.googleapis.com/v1beta/models" -H "x-goog-api-key: $KEY"
+
+# 2. Gọi thử một model cụ thể — có hạn mức thật hay không chỉ biết khi gọi
+curl -s -X POST "https://generativelanguage.googleapis.com/v1beta/models/<MODEL>:generateContent" \
+  -H "x-goog-api-key: $KEY" -H "Content-Type: application/json" \
+  -d '{"contents":[{"parts":[{"text":"say ok"}]}]}'
+```
+
+Model chạy được thì khai vào `codebase/backend/.env` → `GEMINI_MODEL=<model>`, không phải sửa code.
+
+### ⚠️ Rate limit — ảnh hưởng trực tiếp tới demo
+
+Cả hai key đều bị giới hạn, chỉ khác mức độ. Key #1: 20 request/ngày, gọi lần 2 đã 429.
+Key #2 thoáng hơn (5 lần liên tiếp vẫn được) nhưng **vẫn không chịu nổi 21 lượt liên tục**.
+
+Đo thật khi chạy trọn golden set với key #2: chỉ **7/21 lượt tới được AI**, 14 lượt còn lại rơi về luật.
+
+Đã thêm **cache verdict** (`codebase/backend/.ai_cache.json`): câu đã hỏi thì lấy lại verdict AI thật cũ
+thay vì đốt thêm quota, để dành hạn mức cho **câu lạ giám khảo hỏi tại chỗ** — đúng lúc bắt buộc phải
+gọi thật. Tắt cache khi cần đo trung thực: `AI_CACHE=0`.
+
+**Nên làm trước demo:** thêm key dự phòng (`OPENROUTER_API_KEY`, hoặc key Gemini từ tài khoản Google
+khác) — `AI_PROVIDER_ORDER` sẽ tự chuyển sang provider kế tiếp khi cái đầu hết hạn mức.
+
+### Kết quả đo với AI thật
+
+| Cấu hình | Điểm | Ghi chú |
+|---|---|---|
+| Thuần luật (không AI) | **19/21 — 90,5%** | ổn định, không phụ thuộc mạng/quota |
+| Có AI (key #2) | **17/21 — 81,0%** | nhưng chỉ 7/21 lượt thật sự tới AI, còn lại fallback |
+
+**Nói thẳng: bật AI vào chưa làm điểm tốt hơn.** Hai case AI làm sai mà luật làm đúng:
+
+- `"Buổi học sắp tới là gì?"` — AI phán `no_basis` (từ chối) trong khi đúng ra phải `ambiguous` (hỏi lại),
+  vì nguồn có nhiều buổi.
+- `"Điểm danh online được không?"` — AI trả lời từ FAQ điểm danh; kỳ vọng trong bộ đo là từ chối.
+  Case này **có thể do kỳ vọng viết sai**, cần xem lại chứ không chắc AI sai.
+
+Việc chạy nửa AI nửa luật (do rate limit) khiến hành vi **không nhất quán giữa các lượt** — đó mới là
+vấn đề đáng lo hơn con số, và là lý do cần key dự phòng trước khi demo.
+Chi tiết từng case: `eval/results/run-with-real-ai.txt`.
 
 ## Việc còn lại
 

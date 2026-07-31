@@ -33,12 +33,15 @@ from providers import _KEYS, _chat_completion, _openai_response
 _CACHE_PATH = Path(os.environ.get("AI_CACHE_PATH", Path(__file__).with_name(".ai_cache.json")))
 _CACHE_ENABLED = os.environ.get("AI_CACHE", "1") != "0"
 
-# Model mặc định mỗi provider. Gemini KHÔNG lấy từ providers._DEFAULT_MODELS nữa: bản đó ghi
-# "gemini-3.5-flash" (không tồn tại -> 404), và trên key hackathon thì gemini-2.0-flash /
-# -flash-lite đều trả 429 "limit: 0" — đã dò bằng cách gọi thật, chỉ 2.5-flash-lite còn hạn mức.
+# Model mặc định mỗi provider. Đổi bằng env (`GEMINI_MODEL`, `OPENAI_MODEL`...) mà không phải sửa code.
+#
+# Model nào dùng được PHỤ THUỘC VÀO KEY, không cố định — đã gặp thật: key thứ nhất chỉ chạy
+# `gemini-2.5-flash-lite` (các bản 2.0 trả 429 "limit: 0", `gemini-3.5-flash` thì 404 "không tồn tại");
+# key thứ hai thì ngược hẳn — `gemini-3.5-flash` chạy tốt còn `2.5-flash*` báo 404 "no longer available".
+# Nên khi đổi key phải gọi thử lại, đừng tin model cũ vẫn chạy. Cách dò nhanh: xem README.md §Dò model.
 _MODELS = {
     "openai": "gpt-4o-mini",
-    "gemini": "gemini-2.5-flash-lite",
+    "gemini": "gemini-3.5-flash",
     "openrouter": "~google/gemini-flash-latest",
     "cerebras": "gpt-oss-120b",
 }
