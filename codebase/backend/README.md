@@ -53,3 +53,34 @@ tiếp phần enrich/không embed. Thư mục `qdrant_data/` không commit vào 
 `.gitignore` gốc); `smoke_qdrant/` không cần khai báo gitignore vì
 `recsys/smoke.py` tự dọn (`shutil.rmtree`) sau mỗi lần chạy — nếu script crash
 giữa chừng, xoá thủ công `smoke-rec.db` và `smoke_qdrant/` trước khi chạy lại.
+
+## Schedule
+
+2 endpoint trong `api.main`:
+- `GET/PUT /api/users/{user_id}/settings` — cohort ("3"/"4") + phòng LT/LAB của
+  user, lưu trong SQLite (`ensure_user` tự tạo user nếu chưa có); mặc định
+  `{"cohort": "4", "lt_room": "D302", "lab_room": "D305"}`. Bot `/schedule` đọc
+  settings này mỗi lần gọi nên đổi phòng/cohort có hiệu lực ngay, không cần
+  ingest lại.
+- `GET /api/schedule?user_id=&cohort=&from=&to=` — lịch tuần đã build sẵn
+  (`ingest/schedule.py::build_schedule`). Có `user_id` thì suy ra settings của
+  user đó; chỉ có `cohort` (không `user_id`) thì dùng phòng mặc định ở trên —
+  nhánh này phục vụ UI/bot khi chưa biết user. Thiếu `from`/`to` thì mặc định
+  tuần hiện tại (thứ 2 → thứ 7).
+
+Lịch gồm 2 phần ghép lại theo `date`:
+- **Recurring** (`RECURRING_DAYS = range(0, 6)`, tức thứ 2 → thứ 7): mỗi ngày 1
+  buổi LAB (09:00–13:00, phòng `lab_room`) + 1 buổi LT (14:00–18:00, phòng
+  `lt_room`), hình thức Offline, tài liệu tĩnh đính kèm sẵn (LT →
+  `https://vlearn.dev`, LAB → `https://codelabs.vlearn.dev/codelab`).
+- **Buổi tối trích từ thông báo** (WS/OH/MD, cộng `OTHER` cho deadline/checkpoint
+  không khớp 3 loại trên): agent `ingest.agents.schedule_extractor` đọc bài đăng
+  ở các channel `thong-bao`, extract-once — bài đã trích lưu trong bảng đánh dấu
+  riêng (`schedule_extracted`) nên không gọi AI lại cho bài cũ, giống cơ chế
+  enrich-once ở trên. Nếu 1 buổi LAB/LT trong tuần có announcement đổi phòng/host
+  riêng (override), event trích được sẽ ghi đè field tương ứng lên block
+  recurring cùng ngày thay vì tạo dòng riêng; các loại khác (WS/OH/MD/OTHER)
+  được dedup theo `(type, date, start)` trước khi ghép vào lịch.
+
+`GET /api/schedule` không cần `OPENAI_API_KEY` (build từ dữ liệu đã trích sẵn
+trong `companion.db`); chỉ `python -m ingest` (bước extract) mới gọi AI.
