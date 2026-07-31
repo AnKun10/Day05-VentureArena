@@ -4,13 +4,13 @@ import {
   Building2,
   CalendarClock,
   Clapperboard,
-  EyeOff,
   FileText,
   MapPin,
   Pencil,
   Presentation,
   Radio,
   RotateCcw,
+  Trash2,
   UserRound,
   Video,
 } from "lucide-react";
@@ -97,11 +97,20 @@ export default function SessionModal({ session: s, onClose, editable, onSave, on
                 <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
                   <Pencil /> Sửa
                 </Button>
-                {(s.edited || s.custom) && (
+                {s.edited && !s.custom && (
                   <Button variant="ghost" size="sm" onClick={onRevert} title="Khôi phục bản gốc">
                     <RotateCcw /> Khôi phục
                   </Button>
                 )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
+                  onClick={s.custom ? onRevert : onHide}
+                  title={s.custom ? "Xoá buổi tự thêm" : "Ẩn buổi này khỏi lịch của bạn"}
+                >
+                  <Trash2 /> Xoá
+                </Button>
               </div>
             )}
           </div>
@@ -145,18 +154,11 @@ export default function SessionModal({ session: s, onClose, editable, onSave, on
             <p className="col-span-2 text-xs text-muted-foreground">
               Thay đổi chỉ áp dụng cho <b>riêng bạn</b>, không ảnh hưởng người khác.
             </p>
-            <div className="col-span-2 flex justify-between gap-2">
+            <div className="col-span-2 flex justify-end gap-2">
               {!isNew && (
-                <Button variant="ghost" size="sm" className="text-destructive" onClick={onHide}>
-                  <EyeOff /> Ẩn buổi này
-                </Button>
+                <Button variant="outline" size="sm" onClick={() => setEditing(false)}>Huỷ</Button>
               )}
-              <div className="ml-auto flex gap-2">
-                {!isNew && (
-                  <Button variant="outline" size="sm" onClick={() => setEditing(false)}>Huỷ</Button>
-                )}
-                <Button size="sm" onClick={save}>Lưu</Button>
-              </div>
+              <Button size="sm" onClick={save}>Lưu</Button>
             </div>
           </div>
         ) : (
