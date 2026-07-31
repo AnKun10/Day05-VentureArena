@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timedelta
 from typing import Literal
 
@@ -11,7 +12,9 @@ from ingest.store import Store
 from guardrails import check_bio, check_question
 
 app = FastAPI(title="Companion API")
-app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173"],
+_cors_origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",") if o.strip()]
+app.add_middleware(CORSMiddleware, allow_origins=_cors_origins,
+                   allow_origin_regex=r"https://.*\.vercel\.app",
                    allow_methods=["*"], allow_headers=["*"])
 
 
@@ -28,28 +31,32 @@ class AskResponse(BaseModel):
     answer: str
     citations: list[str] = []
     confidence: float = 0.0
+    meta: dict = {}                   # {latency_ms, output_tokens, input_tokens, tool_calls}
 
 
 @app.post("/api/ask", response_model=AskResponse)
 def ask(request: AskRequest, store: Store = Depends(get_store)) -> AskResponse:
-    """Agent hỏi-đáp có 2 tool (hỏi-đáp/bản tin + tài nguyên/lịch). Guardrail
-    chặn nội dung không phù hợp / injection TRƯỚC khi vào agent (chống bịa +
-    chống thao túng)."""
+    """Agent hỏi-đáp có tool (giờ + hỏi-đáp/bản tin + tài nguyên/lịch). Guardrail
+    chặn nội dung không phù hợp / injection TRƯỚC khi vào agent. Trả kèm `meta`
+    (latency, token, số lần gọi tool) để bot log quan sát."""
     verdict = check_question(request.question)
     if not verdict.ok:
         return AskResponse(action="blocked", answer=verdict.reason)
     from ask import answer_question
+    t0 = datetime.now()
     try:
-        result = answer_question(store, verdict.text, Config.from_env())
+        result, meta = answer_question(store, verdict.text, Config.from_env())
     except Exception as exc:
         print(f"[ask] agent failed: {exc}")
         return AskResponse(action="no_info",
                            answer="Companion tạm thời chưa trả lời được. Bạn thử lại sau nhé.")
+    meta = {**meta, "latency_ms": int((datetime.now() - t0).total_seconds() * 1000)}
     return AskResponse(
         action=result.action,          # answer | no_info | clarify | refuse
         answer=result.answer_vi,
         citations=list(dict.fromkeys(result.citations)),   # bỏ trùng, giữ thứ tự
-        confidence=1.0 if result.action == "answer" else 0.0)
+        confidence=1.0 if result.action == "answer" else 0.0,
+        meta=meta)
 
 
 _VS = None
@@ -148,6 +155,12 @@ def put_avatar(user_id: str, body: AvatarBody, store: Store = Depends(get_store)
 @app.get("/api/users/{user_id}/bookmarks")
 def bookmarks(user_id: str, store: Store = Depends(get_store)):
     return store.list_bookmarks(user_id)
+
+
+@app.get("/api/users/{user_id}/bookmarks/news")
+def bookmarks_news(user_id: str, store: Store = Depends(get_store)):
+    """Full bản tin đã bookmark của user — cho trang Bookmark."""
+    return store.list_bookmarked_news(user_id)
 
 
 @app.put("/api/users/{user_id}/bookmarks/{message_id}")

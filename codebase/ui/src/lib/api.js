@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8000";
 
 async function j(url, opts) {
   const res = await fetch(url, opts);
@@ -17,6 +17,7 @@ export const api = {
       body: JSON.stringify({ bio }),
     }),
   bookmarks: (id) => j(`${API_BASE}/api/users/${id}/bookmarks`),
+  bookmarksNews: (id) => j(`${API_BASE}/api/users/${id}/bookmarks/news`),
   setBookmark: (id, mid, on) =>
     j(`${API_BASE}/api/users/${id}/bookmarks/${mid}`, { method: on ? "PUT" : "DELETE" }),
   recommendations: (id, k = 6) =>
